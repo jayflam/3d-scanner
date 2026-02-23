@@ -40,13 +40,10 @@ class TestExtractFramesTask:
             f"frames/test-id/exterior/frame_{i:04d}.jpg" for i in range(1, 4)
         ]
 
-        # Mock self (Celery task context)
-        mock_self = MagicMock()
-        mock_self.request.id = "celery-task-123"
+        # Mock the Celery task's request context
+        extract_frames_task.request.id = "celery-task-123"
 
-        result = extract_frames_task.__wrapped__(
-            mock_self, "test-id", "exterior"
-        )
+        result = extract_frames_task("test-id", "exterior")
 
         assert result["frame_count"] == 3
         assert result["video_type"] == "exterior"
@@ -75,11 +72,10 @@ class TestExtractFramesTask:
 
         mock_blob.download_blob.side_effect = FileNotFoundError("Video not found")
 
-        mock_self = MagicMock()
-        mock_self.request.id = "celery-task-456"
+        extract_frames_task.request.id = "celery-task-456"
 
         with pytest.raises(FileNotFoundError):
-            extract_frames_task.__wrapped__(mock_self, "test-id", "exterior")
+            extract_frames_task("test-id", "exterior")
 
         # Should mark job as failed
         mock_complete_job.assert_called_once_with("job-123", error="Video not found")
