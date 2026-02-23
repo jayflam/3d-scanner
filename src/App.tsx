@@ -1,12 +1,20 @@
-import ModelViewer from "./ModelViewer";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import DashboardLayout from "./layouts/DashboardLayout";
+import AssessmentListPage from "./pages/AssessmentListPage";
+import NewAssessmentPage from "./pages/NewAssessmentPage";
+import AssessmentDetailPage from "./pages/AssessmentDetailPage";
 
-
-let path: string = "/glb/bmw_m4_comp.glb"
-
-function App() {
+export default function App() {
   return (
-    <ModelViewer modelUrl="/glb/bmw_m4_comp.glb" />
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route element={<DashboardLayout />}>
+          <Route index element={<Navigate to="/assessments" replace />} />
+          <Route path="assessments" element={<AssessmentListPage />} />
+          <Route path="assessments/new" element={<NewAssessmentPage />} />
+          <Route path="assessments/:id" element={<AssessmentDetailPage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
 }
-
-export default App
