@@ -1,0 +1,25 @@
+# Web framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic-settings>=2.6.0
+python-multipart>=0.0.12
+
+# Azure OpenAI
+openai>=1.55.0
+
+# TripoSR dependencies
+torch>=2.1.0
+omegaconf==2.3.0
+Pillow>=10.1.0
+einops>=0.7.0
+transformers>=4.35.0
+trimesh>=4.0.5
+rembg
+huggingface-hub
+imageio[ffmpeg]
+xatlas==0.0.9
+moderngl>=5.10.0
+numpy<2
+
+# torchmcubes must be installed from git:
+#   pip install git+https://github.com/tatsy/torchmcubes.git

@@ -1,0 +1,55 @@
+# ── Python ────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# ── Secrets & local config ────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Runtime data (uploads, generated models) ──────────────────────────────
+backend/data/
+backend/demo_output/
+
+# ── Test / tool caches ───────────────────────────────────────────────────
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# ── Node / Frontend ──────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+.turbo/
+.vercel/
+
+# ── IDE ──────────────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Docker ───────────────────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ── OS ───────────────────────────────────────────────────────────────────
+*.log
