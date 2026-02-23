@@ -23,3 +23,29 @@ numpy<2
 
 # torchmcubes must be installed from git:
 #   pip install git+https://github.com/tatsy/torchmcubes.git
+
+# Database
+sqlalchemy[asyncio]>=2.0.25
+asyncpg>=0.29.0
+alembic>=1.13.0
+
+# Task queue
+celery[redis]>=5.3.6
+redis>=5.0.0
+
+# Azure Blob Storage
+azure-storage-blob>=12.19.0
+azure-identity>=1.15.0
+
+# Video processing
+ffmpeg-python>=0.2.0
+
+# PDF generation
+weasyprint>=61.0
+
+# Gaussian Splatting dependencies
+# gsplat and nerfstudio installed separately (GPU machine)
+
+# Testing
+pytest>=7.0.0
+httpx>=0.25.0
