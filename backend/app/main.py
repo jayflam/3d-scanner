@@ -1,4 +1,4 @@
-"""FastAPI application entry point for the Car Insurance Quote service."""
+"""FastAPI application entry point for InsuraScan."""
 
 from __future__ import annotations
 
@@ -10,8 +10,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import init_routes, router
+from app.api.v1.router import api_router as v1_router
 from app.api.websocket import init_ws, ws_router
 from app.config import settings
+from app.services.blob_storage import blob_storage
 from app.services.damage import DamageAssessmentService
 from app.services.job_manager import JobManager
 from app.services.triposr import TripoSRService
@@ -29,13 +31,21 @@ job_manager = JobManager(triposr_service, damage_service)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting up — loading models …")
+    logger.info("Starting up — initializing services …")
 
-    triposr_service.load(
-        model_id=settings.triposr_model_id,
-        device=settings.triposr_device,
-        chunk_size=settings.triposr_chunk_size,
-    )
+    # Initialize blob storage (Azure or local fallback)
+    blob_storage.init()
+
+    # Load legacy MVP services (TripoSR + single-image damage assessment)
+    try:
+        triposr_service.load(
+            model_id=settings.triposr_model_id,
+            device=settings.triposr_device,
+            chunk_size=settings.triposr_chunk_size,
+        )
+    except Exception as exc:
+        logger.warning("TripoSR not available: %s", exc)
+
     damage_service.load()
 
     job_manager.set_loop(asyncio.get_event_loop())
@@ -50,12 +60,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Car Damage Quote API",
+    title="InsuraScan API",
     description=(
-        "Upload a photo of your damaged car to receive an instant 3D model "
-        "and insurance quote."
+        "AR/XR Vehicle Damage Assessment Platform — upload videos, "
+        "generate 3D Gaussian Splats, and get AI-powered damage estimates."
     ),
-    version="0.1.0",
+    version="1.0.0",
     lifespan=lifespan,
 )
 
@@ -67,5 +77,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Legacy MVP routes (single-image upload)
 app.include_router(router)
 app.include_router(ws_router)
+
+# New v1 API routes (video-based pipeline)
+app.include_router(v1_router)
