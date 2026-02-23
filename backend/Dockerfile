@@ -5,8 +5,11 @@ ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.11 python3.11-venv python3-pip git libgl1 libglib2.0-0 \
-    libegl1 libgomp1 && \
-    rm -rf /var/lib/apt/lists/*
+    libegl1 libgomp1 \
+    ffmpeg \
+    libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 \
+    libffi-dev libcairo2 libpangoft2-1.0-0 \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN ln -sf /usr/bin/python3.11 /usr/bin/python
 
@@ -22,6 +25,9 @@ RUN git clone --depth 1 https://github.com/VAST-AI-Research/TripoSR.git /opt/tri
 ENV PYTHONPATH="/opt/triposr:${PYTHONPATH}"
 
 COPY . .
+
+# Create data directories
+RUN mkdir -p data/uploads data/outputs
 
 EXPOSE 8000
 
