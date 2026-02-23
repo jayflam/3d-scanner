@@ -1,0 +1,35 @@
+.container {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--off-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon {
+  font-size: 36px;
+  color: var(--ink-faint);
+}
+
+.empty h2 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+}
+
+.empty p {
+  font-size: 0.8rem;
+  color: var(--ink-light);
+  line-height: 1.6;
+  max-width: 260px;
+}

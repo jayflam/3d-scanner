@@ -1,75 +1,73 @@
-# React + TypeScript + Vite
+# Spaceframe
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Vehicle damage assessment app — TypeScript · React · Vite · React Three Fiber · Drei
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Setup
 
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open `http://localhost:5173` in your browser (or on your phone via the local network IP printed by Vite).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Project Structure
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── components/
+│   ├── AppHeader.tsx       # Top navigation bar
+│   ├── Navigation.tsx      # Bottom tab navigation
+│   ├── HomeScreen.tsx      # Home / dashboard
+│   ├── ScanScreen.tsx      # Camera capture + file upload
+│   ├── ModelViewer.tsx     # react-three-fiber GLB viewer
+│   ├── ModelScreen.tsx     # 3D viewer + damage assessment panel
+│   └── ReportsScreen.tsx   # Reports listing (placeholder)
+├── types/
+│   └── index.ts            # Shared TypeScript types
+├── App.tsx                 # Root component with screen routing
+├── main.tsx                # Entry point
+└── index.css               # Global CSS variables & resets
+```
+
+## Features
+
+| # | Feature | Notes |
+|---|---------|-------|
+| 1 | **Camera Capture** | Photo and video via `MediaDevices.getUserMedia`. Multi-angle guided mode. iOS + Android compatible via browser. |
+| 2 | **Upload & API** | `POST /api/assess` with multipart form data. Replace `API_ENDPOINT` in `ScanScreen.tsx` with your backend URL. |
+| 3 | **GLB Viewer** | Full `OrbitControls` (rotate, zoom, pan). Auto-fits camera to model bounding box. Environment lighting via Drei. |
+| 4 | **Damage Assessment** | Panel renders alongside the 3D viewer. Swap `MOCK_ASSESSMENT` in `ModelScreen.tsx` with real API response data. |
+| 5 | **Mobile-first UI** | Bottom tab navigation, safe-area insets, large touch targets, white/ink high-contrast design system. |
+
+## Backend Integration
+
+Two integration points are stubbed:
+
+### 1. Photo/Video Upload — `ScanScreen.tsx`
+```ts
+const API_ENDPOINT = '/api/assess'  // ← change to your backend
+```
+The `submitForAssessment` function POSTs a `FormData` object with all captured files.
+Expected response shape:
+```json
+{ "assessmentId": "abc123", "status": "processing" }
+```
+
+### 2. Assessment Results — `ModelScreen.tsx`
+Replace `MOCK_ASSESSMENT` with a fetch to your results endpoint:
+```ts
+const result = await fetch(`/api/assess/${id}`).then(r => r.json())
+```
+The `AssessmentResult` type in `src/types/index.ts` defines the expected shape.
+
+## Tech Stack
+
+- **Vite** — dev server + build tool
+- **React 18** — UI framework
+- **TypeScript** — type safety
+- **react-three-fiber** — React renderer for Three.js
+- **@react-three/drei** — Three.js helpers (OrbitControls, GLTFLoader, Environment, etc.)
+- **CSS Modules** — scoped styles, no CSS-in-JS dependencies
