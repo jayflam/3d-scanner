@@ -6,6 +6,7 @@ import SplatViewer from "../components/SplatViewer";
 import DamageReportPanel from "../components/DamageReport";
 import VideoPlayer from "../components/VideoPlayer";
 import StatusBadge from "../components/StatusBadge";
+import ZoneDiagram from "../components/ZoneDiagram";
 import useJobProgress from "../hooks/useJobProgress";
 
 export default function AssessmentDetailPage() {
@@ -130,6 +131,11 @@ export default function AssessmentDetailPage() {
             exteriorUrl={exteriorVideoUrl}
             interiorUrl={interiorVideoUrl}
           />
+
+          {/* Zone diagram */}
+          {damageReport && damageReport.items.length > 0 && (
+            <ZoneDiagram damages={damageReport.items} />
+          )}
 
           {/* Frame counts */}
           {(assessment.frame_count.exterior > 0 || assessment.frame_count.interior > 0) && (
