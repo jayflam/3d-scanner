@@ -1,4 +1,4 @@
-import React, { Suspense, useRef, useEffect } from 'react'
+import { Suspense, useRef, useEffect } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import {
   OrbitControls,
@@ -94,7 +94,7 @@ interface ModelViewerProps {
   glbUrl: string | null
 }
 
-const ModelViewer: React.FC<ModelViewerProps> = ({ glbUrl }) => {
+function ModelViewer({ glbUrl }: ModelViewerProps) {
   if (!glbUrl) {
     return (
       <div style={{

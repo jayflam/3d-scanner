@@ -1,4 +1,5 @@
-import React, { useRef, useState } from 'react'
+import { useRef, useState } from 'react'
+import type { ChangeEvent } from 'react'
 import ModelViewer from './ModelViewer'
 import type { AssessmentResult, DamageSeverity } from '../types'
 import styles from './ModelScreen.module.css'
@@ -32,13 +33,13 @@ const dotColors: Record<DamageSeverity, string> = {
   high: '#D93025', medium: '#D97706', low: '#A16207', clear: '#1A7F52',
 }
 
-const ModelScreen: React.FC = () => {
+function ModelScreen() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [glbUrl, setGlbUrl] = useState<string | null>(null)
   const [glbName, setGlbName] = useState<string | null>(null)
   const [showAssessment, setShowAssessment] = useState(false)
 
-  const handleGlbSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGlbSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (glbUrl) URL.revokeObjectURL(glbUrl)

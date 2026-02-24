@@ -1,4 +1,5 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
+import type { ChangeEvent } from 'react'
 import type { CaptureMode, UploadState } from '../types'
 import styles from './ScanScreen.module.css'
 
@@ -7,7 +8,7 @@ const API_ENDPOINT = '/api/assess'
 
 type MediaItem = { type: 'photo'; blob: Blob; url: string } | { type: 'video'; blob: Blob; url: string }
 
-const ScanScreen: React.FC = () => {
+function ScanScreen() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -92,7 +93,7 @@ const ScanScreen: React.FC = () => {
     }
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     files.forEach(file => {
       const url = URL.createObjectURL(file)

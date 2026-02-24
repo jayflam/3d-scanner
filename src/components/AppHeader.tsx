@@ -1,4 +1,3 @@
-import React from 'react'
 import type { Screen } from '../types'
 import styles from './AppHeader.module.css'
 

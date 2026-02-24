@@ -1,4 +1,3 @@
-import React from 'react'
 import type { Screen } from '../types'
 import styles from './Navigation.module.css'
 
@@ -14,7 +13,7 @@ const navItems: { id: Screen; icon: string; label: string }[] = [
   { id: 'reports', icon: '≡',  label: 'REPORTS' },
 ]
 
-const Navigation: React.FC<NavigationProps> = ({ current, onChange }) => {
+function Navigation({ current, onChange }: NavigationProps) {
   return (
     <nav className={styles.nav}>
       {navItems.map(item => (

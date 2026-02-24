@@ -1,7 +1,6 @@
-import React from 'react'
 import styles from './ReportsScreen.module.css'
 
-const ReportsScreen: React.FC = () => {
+function ReportsScreen() {
   return (
     <div className={styles.container}>
       <div className={styles.empty}>

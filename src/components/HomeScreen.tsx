@@ -1,4 +1,3 @@
-import React from 'react'
 import type { Screen, RecentAssessment } from '../types'
 import styles from './HomeScreen.module.css'
 
@@ -23,14 +22,14 @@ const MOCK_RECENT: RecentAssessment[] = [
   },
 ]
 
-const quickActions: { icon: string; title: string; desc: string; screen: Screen; primary?: boolean }[] = [
-  { icon: '📷', title: 'Take Photo',    desc: 'Capture with your camera',   screen: 'scan',   primary: true },
-  { icon: '🎥', title: 'Record Video',  desc: 'Walk-around inspection mode', screen: 'scan' },
-  { icon: '📤', title: 'Upload File',   desc: 'From your photo library',     screen: 'scan' },
-  { icon: '◈',  title: 'View 3D Model', desc: 'Open a GLB model file',       screen: 'model' },
+const quickActions: { title: string; desc: string; screen: Screen; primary?: boolean }[] = [
+  { title: 'Take Photo',    desc: 'Capture with your camera',   screen: 'scan',   primary: true },
+  { title: 'Record Video',  desc: 'Walk-around inspection mode', screen: 'scan' },
+  { title: 'Upload File',   desc: 'From your photo library',     screen: 'scan' },
+  { title: 'View 3D Model', desc: 'Open a GLB model file',       screen: 'model' },
 ]
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
+function HomeScreen({ onNavigate }: HomeScreenProps) {
   return (
     <div className={styles.container}>
       {/* Hero */}
@@ -48,7 +47,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
             className={`${styles.actionCard} ${action.primary ? styles.primary : ''}`}
             onClick={() => onNavigate(action.screen)}
           >
-            <span className={styles.cardIcon}>{action.icon}</span>
             <span className={styles.cardTitle}>{action.title}</span>
             <span className={styles.cardDesc}>{action.desc}</span>
           </button>
