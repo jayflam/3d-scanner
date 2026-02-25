@@ -15,9 +15,6 @@ interface AppHeaderProps {
 function AppHeader({ screen }: AppHeaderProps) {
   return (
     <header className={styles.header}>
-      <div className={styles.logo}>
-        Space<span>frame</span>
-      </div>
       <div className={styles.badge}>
         {badgeLabels[screen]}
       </div>

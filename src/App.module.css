@@ -28,3 +28,17 @@
     box-shadow: 0 0 60px rgba(0,0,0,0.1);
   }
 }
+
+/* Desktop: home screen fills the full viewport — no max-width cap */
+@media (min-width: 768px) {
+  .appHome {
+    max-width: 100%;
+    border-left: none;
+    border-right: none;
+    box-shadow: none;
+  }
+
+  body:has(.appHome) {
+    background: #0d0d0d;
+  }
+}

@@ -145,7 +145,6 @@ function ScanScreen() {
       <div className={styles.viewfinder}>
         {error ? (
           <div className={styles.cameraError}>
-            <span>📷</span>
             <p>{error}</p>
             <button className={styles.retryBtn} onClick={() => startCamera(cameraFacing)}>Try Again</button>
           </div>
@@ -181,7 +180,7 @@ function ScanScreen() {
       {/* Shutter row */}
       <div className={styles.shutterRow}>
         <button className={styles.sideBtn} onClick={() => setCameraFacing(f => f === 'environment' ? 'user' : 'environment')} title="Flip camera">
-          🔄
+          FLIP
         </button>
         <button
           className={`${styles.shutterBtn} ${isRecording ? styles.recording : ''}`}
@@ -192,14 +191,14 @@ function ScanScreen() {
           <div className={styles.shutterInner} />
         </button>
         <button className={styles.sideBtn} onClick={() => fileInputRef.current?.click()} title="Choose from library">
-          🖼
+          LIB
         </button>
       </div>
 
       {/* Angle progress */}
       {(mode === 'multi' || capturedItems.length > 0) && (
         <div className={styles.angleGuide}>
-          <p className={styles.angleTitle}>📐 Capture Progress — {capturedItems.length} file{capturedItems.length !== 1 ? 's' : ''}</p>
+          <p className={styles.angleTitle}>Capture Progress — {capturedItems.length} file{capturedItems.length !== 1 ? 's' : ''}</p>
           <div className={styles.angleDots}>
             {Array.from({ length: 6 }).map((_, i) => (
               <div
@@ -243,10 +242,10 @@ function ScanScreen() {
         onClick={submitForAssessment}
         disabled={capturedItems.length === 0 || uploadState.status === 'uploading'}
       >
-        ⬆ Submit for Assessment{capturedItems.length > 0 ? ` (${capturedItems.length})` : ''}
+        Submit for Assessment{capturedItems.length > 0 ? ` (${capturedItems.length})` : ''}
       </button>
       <button className={styles.libraryBtn} onClick={() => fileInputRef.current?.click()}>
-        🖼 Choose from Library
+        Choose from Library
       </button>
 
       <input

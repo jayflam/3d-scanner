@@ -1,197 +1,323 @@
+/* ── Container ───────────────────────────────────────────── */
 .container {
   flex: 1;
-  overflow-y: auto;
-  background: var(--off-white);
-  -webkit-overflow-scrolling: touch;
-}
-
-.hero {
-  background: var(--ink);
-  margin: 14px;
-  border-radius: var(--radius-lg);
-  height: 180px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  position: relative;
+  background: #0d0d0d;
   overflow: hidden;
+  position: relative;
 }
 
-.hero::before {
-  content: '';
+/* ── Top banner ──────────────────────────────────────────── */
+.banner {
+  position: relative;
+  width: 100%;
+  background: #1a1a1e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Banner image — compact with margin breathing room */
+.bannerImg {
+  display: block;
+  width: auto;
+  max-width: calc(100% - 96px);
+  max-height: 72px;
+  object-fit: contain;
+  margin: 14px auto;
+}
+
+/* ── Hamburger button ────────────────────────────────────── */
+.hamburger {
   position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    45deg,
-    transparent, transparent 28px,
-    rgba(255,255,255,0.025) 28px, rgba(255,255,255,0.025) 30px
-  );
-}
-
-.heroIcon {
-  font-size: 28px;
-  width: 56px;
-  height: 56px;
-  border: 2px solid rgba(255,255,255,0.25);
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  z-index: 1;
-  background: rgba(255,255,255,0.05);
-}
-
-.heroTitle {
-  color: var(--white);
-  font-size: 1.05rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  position: relative;
-  z-index: 1;
-}
-
-.heroSub {
-  color: rgba(255,255,255,0.45);
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.1em;
-  position: relative;
-  z-index: 1;
-}
-
-.actionGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 0 14px;
-  margin-top: 8px;
-}
-
-.actionCard {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 14px;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 7px;
-  transition: transform 0.15s, box-shadow 0.15s;
-  text-align: left;
+  gap: 5px;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.15s;
 }
 
-.actionCard:active {
-  transform: scale(0.97);
+.hamburger:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.primary {
-  background: var(--ink);
-  border-color: var(--ink);
+.hamburger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #fff;
+  border-radius: 2px;
+  transform-origin: center;
+  transition: transform 0.2s, opacity 0.2s;
 }
 
-.cardIcon {
-  font-size: 18px;
-  width: 36px;
-  height: 36px;
-  background: var(--surface);
-  border-radius: 10px;
+.hamburgerOpen span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburgerOpen span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.hamburgerOpen span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── Scrollable content area ─────────────────────────────── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 32px 24px 40px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 44px;
 }
 
-.primary .cardIcon {
-  background: rgba(255,255,255,0.12);
+/* ── Section 1: Welcome ──────────────────────────────────── */
+.welcomeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.cardTitle {
-  font-size: 0.82rem;
+.welcomeTag {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  color: #FFAA6E;
+  text-transform: uppercase;
   font-weight: 600;
-  color: var(--ink);
+  margin: 0;
+}
+
+.welcomeTitle {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.welcomeDesc {
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.62);
+  margin: 0;
+}
+
+.ctaButton {
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 12px 26px;
+  background: #FFAA6E;
+  color: #1a0e00;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: none;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 4px 16px rgba(255, 170, 110, 0.25);
+}
+
+.ctaButton:hover {
+  background: #FFB880;
+  box-shadow: 0 6px 20px rgba(255, 170, 110, 0.35);
+}
+
+.ctaButton:active {
+  transform: scale(0.96);
+}
+
+/* ── Section 2: How it works ─────────────────────────────── */
+.stepsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.stepsHeading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin: 0;
+}
+
+.stepsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  transition: background 0.15s;
+}
+
+.step:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Step number — large, teal-to-cyan gradient ascending ──── */
+.stepNumber {
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 44px;
+  text-align: center;
+  letter-spacing: -0.04em;
+}
+
+/*
+  Teal–cyan palette: complements orange, not orange itself.
+  Ascending: light → medium → deeper
+*/
+.stepNum1 { color: #A5EEF4; }   /* pale cyan   */
+.stepNum2 { color: #2EC4D6; }   /* medium teal */
+.stepNum3 { color: #0D8FA3; }   /* deep teal   */
+
+.stepBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.stepTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
   letter-spacing: -0.01em;
 }
 
-.primary .cardTitle {
-  color: var(--white);
+.stepDesc {
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.52);
+  margin: 0;
 }
 
-.cardDesc {
-  font-size: 0.64rem;
-  color: var(--ink-light);
-  font-family: var(--font-mono);
-  line-height: 1.4;
-}
-
-.primary .cardDesc {
-  color: rgba(255,255,255,0.5);
-}
-
-.sectionTitle {
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-light);
-  padding: 16px 14px 8px;
-}
-
-.recentItem {
-  background: var(--white);
-  margin: 0 14px 8px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  padding: 12px 14px;
+/* ── Hamburger menu overlay ──────────────────────────────── */
+.menuOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 200;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  justify-content: flex-end;
+  animation: fadeIn 0.15s ease;
 }
 
-.recentThumb {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: var(--surface);
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.menuPanel {
+  width: 240px;
+  background: #18181b;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 52px 0 32px;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.6);
+  animation: slideIn 0.2s ease;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+.menuClose {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
+  padding: 0;
 }
 
-.recentInfo {
-  flex: 1;
-  min-width: 0;
+.menuClose span {
+  position: absolute;
+  width: 18px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 2px;
 }
 
-.recentTitle {
-  font-size: 0.82rem;
+.menuClose span:nth-child(1) { transform: rotate(45deg); }
+.menuClose span:nth-child(2) { transform: rotate(-45deg); }
+
+.menuItem {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.95rem;
   font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-align: left;
+  padding: 15px 28px;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: background 0.15s, color 0.15s;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.recentSub {
-  font-size: 0.6rem;
-  color: var(--ink-light);
-  font-family: var(--font-mono);
-  margin-top: 2px;
+.menuItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
 }
 
-.pill {
-  font-size: 0.58rem;
-  font-family: var(--font-mono);
-  padding: 3px 9px;
-  border-radius: 100px;
-  font-weight: 500;
-  flex-shrink: 0;
+/* ── Desktop overrides (≥ 768 px) ────────────────────────── */
+@media (min-width: 768px) {
+  .desktop .bannerImg {
+    max-width: 480px;
+    max-height: 90px;
+    margin: 18px auto;
+  }
+
+  .desktop .content {
+    max-width: 680px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 48px 40px 56px;
+  }
+
+  .desktop .welcomeTitle {
+    font-size: 2.4rem;
+  }
+
+  .desktop .welcomeDesc {
+    font-size: 0.95rem;
+  }
+
+  .desktop .step {
+    padding: 24px 28px;
+  }
 }
-
-.done { background: #D1FAE5; color: var(--green); }
-.processing { background: #FEF3C7; color: var(--amber); }
-.failed { background: #FEE2E2; color: var(--red); }
-
-.bottomSpacer { height: 20px; }

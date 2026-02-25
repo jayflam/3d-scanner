@@ -67,7 +67,7 @@ function ModelScreen() {
 
       {/* File picker */}
       <button className={styles.filePicker} onClick={() => fileInputRef.current?.click()}>
-        <div className={styles.fpIcon}>📂</div>
+        <div className={styles.fpIcon}>GLB</div>
         <div className={styles.fpText}>
           <span className={styles.fpMain}>{glbName ?? 'Open GLB File'}</span>
           <span className={styles.fpSub}>{glbName ? 'TAP TO CHANGE FILE' : 'TAP TO BROWSE FILES'}</span>

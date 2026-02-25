@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import type { Screen } from './types'
 import AppHeader from './components/AppHeader'
 import Navigation from './components/Navigation'
@@ -22,8 +22,8 @@ function App() {
     }
 
     return (
-      <div className={styles.app}>
-        <AppHeader screen={screen} />
+      <div className={`${styles.app} ${screen === 'home' ? styles.appHome : ''}`}>
+        {screen !== 'home' && <AppHeader screen={screen} />}
         <main className={styles.main}>
           {renderScreen()}
         </main>

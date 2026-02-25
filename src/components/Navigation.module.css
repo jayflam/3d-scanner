@@ -1,59 +1,80 @@
+/* ── Nav bar ─────────────────────────────────────────────── */
 .nav {
   display: flex;
-  align-items: center;
-  height: 64px;
-  background: var(--white);
-  border-top: 1px solid var(--border);
-  padding: 0 8px;
-  padding-bottom: var(--safe-bottom);
+  align-items: stretch;
+  height: 72px;
+  background: #111114;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 10px;
+  padding-bottom: calc(var(--safe-bottom, 0px) + 8px);
+  gap: 6px;
   flex-shrink: 0;
 }
 
+/* ── Individual tab button ───────────────────────────────── */
 .item {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 8px 4px;
-  background: transparent;
-  border-radius: var(--radius-sm);
-  transition: background 0.15s;
+  gap: 4px;
+  padding: 7px 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  /* Subtle lift shadow so it looks tappable */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .item:active {
-  background: var(--surface);
+  transform: scale(0.94);
+  background: rgba(255, 255, 255, 0.13);
 }
 
+/* ── Active / selected state — pastel orange ─────────────── */
+.active {
+  background: rgba(255, 170, 110, 0.16);
+  border-color: rgba(255, 170, 110, 0.35);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 12px rgba(255, 170, 110, 0.08) inset;
+}
+
+.active:hover {
+  background: rgba(255, 170, 110, 0.22);
+}
+
+/* ── Icon ────────────────────────────────────────────────── */
 .icon {
-  font-size: 18px;
-  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--ink-light);
-  transition: background 0.15s, color 0.15s;
+  color: rgba(255, 255, 255, 0.42);
+  transition: color 0.15s;
+  line-height: 0;
 }
 
 .active .icon {
-  background: var(--ink);
-  color: var(--white);
+  color: #FFAA6E;
 }
 
+/* ── Label ───────────────────────────────────────────────── */
 .label {
-  font-family: var(--font-mono);
-  font-size: 0.5rem;
-  letter-spacing: 0.08em;
-  color: var(--ink-faint);
-  font-weight: 500;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.48rem;
+  letter-spacing: 0.07em;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.38);
   transition: color 0.15s;
+  white-space: nowrap;
 }
 
 .active .label {
-  color: var(--ink);
+  color: #FFAA6E;
 }
