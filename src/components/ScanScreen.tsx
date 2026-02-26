@@ -179,9 +179,7 @@ function ScanScreen() {
 
       {/* Shutter row */}
       <div className={styles.shutterRow}>
-        <button className={styles.sideBtn} onClick={() => setCameraFacing(f => f === 'environment' ? 'user' : 'environment')} title="Flip camera">
-          FLIP
-        </button>
+        <div className={styles.sideBtnSpacer} />
         <button
           className={`${styles.shutterBtn} ${isRecording ? styles.recording : ''}`}
           onClick={handleShutter}
@@ -190,8 +188,14 @@ function ScanScreen() {
         >
           <div className={styles.shutterInner} />
         </button>
-        <button className={styles.sideBtn} onClick={() => fileInputRef.current?.click()} title="Choose from library">
-          LIB
+        <button className={styles.sideBtn} onClick={() => setCameraFacing(f => f === 'environment' ? 'user' : 'environment')} title="Flip camera" aria-label="Flip camera">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6.5 4.5H4A1.5 1.5 0 002.5 6v10A1.5 1.5 0 004 17.5h14A1.5 1.5 0 0019.5 16V6A1.5 1.5 0 0018 4.5h-2.5L14 3H8L6.5 4.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
+            <path d="M14.5 10.5a4.5 4.5 0 01-7.4 3.46" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            <path d="M7.1 13.96L6.5 11.5l2.5.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M7.5 10.5a4.5 4.5 0 017.4-3.46" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            <path d="M14.9 7.04L15.5 9.5l-2.5-.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </button>
       </div>
 
@@ -253,6 +257,7 @@ function ScanScreen() {
         type="file"
         accept="image/*,video/*"
         multiple
+        style={{ display: 'none' }} 
         className="visually-hidden"
         onChange={handleFileUpload}
       />

@@ -1,7 +1,7 @@
 .container {
   flex: 1;
   overflow-y: auto;
-  background: var(--off-white);
+  background: #0d0d0d;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -122,19 +122,18 @@
   flex: 1;
   padding: 9px 4px;
   border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--white);
-  font-family: var(--font-mono);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
   font-size: 0.65rem;
   letter-spacing: 0.06em;
-  color: var(--ink-light);
+  color: rgba(255, 255, 255, 0.55);
   transition: all 0.15s;
 }
 
 .activeTab {
-  background: var(--ink);
-  color: var(--white);
-  border-color: var(--ink);
+  background: rgba(255, 170, 110, 0.18);
+  border-color: rgba(255, 170, 110, 0.4);
+  color: #FFAA6E;
 }
 
 .shutterRow {
@@ -181,30 +180,40 @@
   background: #D93025;
 }
 
+.sideBtnSpacer {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
 .sideBtn {
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: var(--white);
-  border: 1px solid var(--border);
-  font-size: 20px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .angleGuide {
-  background: var(--white);
+  background: rgba(255, 255, 255, 0.05);
   margin: 0 14px 10px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 12px 14px;
 }
 
 .angleTitle {
   font-size: 0.7rem;
   font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
   margin-bottom: 10px;
 }
 
@@ -273,14 +282,13 @@
   margin: 0 14px 10px;
   padding: 12px 14px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .uploadStatus p {
   font-size: 0.72rem;
-  color: var(--ink-light);
-  font-family: var(--font-mono);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .uploading { border-color: var(--amber); }
@@ -305,25 +313,26 @@
 .submitBtn {
   width: calc(100% - 28px);
   margin: 0 14px 8px;
-  background: var(--ink);
-  color: var(--white);
+  background: #FFAA6E;
+  color: #1a0e00;
   border: none;
   border-radius: var(--radius-md);
   height: 50px;
   font-size: 0.88rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.01em;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, background 0.15s;
 }
 
-.submitBtn:disabled { opacity: 0.4; }
+.submitBtn:hover { background: #FFB880; }
+.submitBtn:disabled { opacity: 0.35; }
 
 .libraryBtn {
   width: calc(100% - 28px);
   margin: 0 14px;
   background: transparent;
-  color: var(--ink);
-  border: 1.5px solid var(--ink);
+  color: rgba(255, 255, 255, 0.75);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-md);
   height: 46px;
   font-size: 0.84rem;

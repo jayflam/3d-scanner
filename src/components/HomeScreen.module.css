@@ -5,66 +5,7 @@
   flex-direction: column;
   background: #0d0d0d;
   overflow: hidden;
-  position: relative;
 }
-
-/* ── Top banner ──────────────────────────────────────────── */
-.banner {
-  position: relative;
-  width: 100%;
-  background: #1a1a1e;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Banner image — compact with margin breathing room */
-.bannerImg {
-  display: block;
-  width: auto;
-  max-width: calc(100% - 96px);
-  max-height: 72px;
-  object-fit: contain;
-  margin: 14px auto;
-}
-
-/* ── Hamburger button ────────────────────────────────────── */
-.hamburger {
-  position: absolute;
-  top: 50%;
-  right: 16px;
-  transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  cursor: pointer;
-  z-index: 10;
-  transition: background 0.15s;
-}
-
-.hamburger:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.hamburger span {
-  display: block;
-  width: 20px;
-  height: 2px;
-  background: #fff;
-  border-radius: 2px;
-  transform-origin: center;
-  transition: transform 0.2s, opacity 0.2s;
-}
-
-.hamburgerOpen span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-.hamburgerOpen span:nth-child(2) { opacity: 0; transform: scaleX(0); }
-.hamburgerOpen span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
 /* ── Scrollable content area ─────────────────────────────── */
 .content {
@@ -85,7 +26,6 @@
 }
 
 .welcomeTag {
-  font-family: var(--font-mono, monospace);
   font-size: 0.6rem;
   letter-spacing: 0.14em;
   color: #FFAA6E;
@@ -174,7 +114,6 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
-/* Step number — large, teal-to-cyan gradient ascending ──── */
 .stepNumber {
   font-size: 2.4rem;
   font-weight: 800;
@@ -185,13 +124,9 @@
   letter-spacing: -0.04em;
 }
 
-/*
-  Teal–cyan palette: complements orange, not orange itself.
-  Ascending: light → medium → deeper
-*/
-.stepNum1 { color: #A5EEF4; }   /* pale cyan   */
-.stepNum2 { color: #2EC4D6; }   /* medium teal */
-.stepNum3 { color: #0D8FA3; }   /* deep teal   */
+.stepNum1 { color: #A5EEF4; }
+.stepNum2 { color: #2EC4D6; }
+.stepNum3 { color: #0D8FA3; }
 
 .stepBody {
   display: flex;
@@ -215,109 +150,16 @@
   margin: 0;
 }
 
-/* ── Hamburger menu overlay ──────────────────────────────── */
-.menuOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 200;
-  display: flex;
-  justify-content: flex-end;
-  animation: fadeIn 0.15s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.menuPanel {
-  width: 240px;
-  background: #18181b;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 52px 0 32px;
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.6);
-  animation: slideIn 0.2s ease;
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
-  position: relative;
-}
-
-@keyframes slideIn {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0); }
-}
-
-.menuClose {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-
-.menuClose span {
-  position: absolute;
-  width: 18px;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 2px;
-}
-
-.menuClose span:nth-child(1) { transform: rotate(45deg); }
-.menuClose span:nth-child(2) { transform: rotate(-45deg); }
-
-.menuItem {
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 0.95rem;
-  font-weight: 500;
-  text-align: left;
-  padding: 15px 28px;
-  cursor: pointer;
-  letter-spacing: 0.01em;
-  transition: background 0.15s, color 0.15s;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.menuItem:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-}
-
-/* ── Desktop overrides (≥ 768 px) ────────────────────────── */
+/* ── Desktop (≥ 768 px) ──────────────────────────────────── */
 @media (min-width: 768px) {
-  .desktop .bannerImg {
-    max-width: 480px;
-    max-height: 90px;
-    margin: 18px auto;
-  }
-
-  .desktop .content {
+  .content {
     max-width: 680px;
     margin: 0 auto;
     width: 100%;
     padding: 48px 40px 56px;
   }
 
-  .desktop .welcomeTitle {
-    font-size: 2.4rem;
-  }
-
-  .desktop .welcomeDesc {
-    font-size: 0.95rem;
-  }
-
-  .desktop .step {
-    padding: 24px 28px;
-  }
+  .welcomeTitle { font-size: 2.4rem; }
+  .welcomeDesc  { font-size: 0.95rem; }
+  .step         { padding: 24px 28px; }
 }

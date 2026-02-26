@@ -1,25 +1,8 @@
-import { useState, useEffect } from 'react'
-import bannerMobile from '../assets/banner_mobile.png'
-import bannerWeb from '../assets/banner_web.png'
 import type { Screen } from '../types'
 import styles from './HomeScreen.module.css'
 
 interface HomeScreenProps {
   onNavigate: (screen: Screen) => void
-}
-
-/** Returns true when the viewport is wider than 768 px (desktop). Updates live on resize. */
-function useIsDesktop(): boolean {
-  const [isDesktop, setIsDesktop] = useState(
-    () => window.matchMedia('(min-width: 768px)').matches
-  )
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)')
-    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
-  return isDesktop
 }
 
 const steps: { title: string; desc: string }[] = [
@@ -38,33 +21,8 @@ const steps: { title: string; desc: string }[] = [
 ]
 
 function HomeScreen({ onNavigate }: HomeScreenProps) {
-  const isDesktop = useIsDesktop()
-  const [menuOpen, setMenuOpen] = useState(false)
-
-  const closeMenu = () => setMenuOpen(false)
-
   return (
-    <div className={`${styles.container} ${isDesktop ? styles.desktop : ''}`}>
-
-      {/* Top banner */}
-      <div className={styles.banner}>
-        <picture>
-          <source media="(min-width: 600px)" srcSet={bannerWeb} />
-          <img src={bannerMobile} alt="Spaceframe" className={styles.bannerImg} />
-        </picture>
-        <button
-          className={`${styles.hamburger} ${menuOpen ? styles.hamburgerOpen : ''}`}
-          onClick={() => setMenuOpen(o => !o)}
-          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={menuOpen}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
-      </div>
-
-      {/* Scrollable content */}
+    <div className={styles.container}>
       <div className={styles.content}>
 
         {/* — Section 1: Welcome ——————————————————————————————— */}
@@ -104,35 +62,6 @@ function HomeScreen({ onNavigate }: HomeScreenProps) {
         </section>
 
       </div>
-
-      {/* Hamburger slide-in menu */}
-      {menuOpen && (
-        <div className={styles.menuOverlay} onClick={closeMenu}>
-          <nav className={styles.menuPanel} onClick={e => e.stopPropagation()}>
-            <button className={styles.menuClose} onClick={closeMenu} aria-label="Close menu">
-              <span />
-              <span />
-            </button>
-            {(
-              [
-                { label: 'Home',     screen: 'home'    },
-                { label: 'Scan',     screen: 'scan'    },
-                { label: '3D Model', screen: 'model'   },
-                { label: 'Reports',  screen: 'reports' },
-              ] as { label: string; screen: Screen }[]
-            ).map(item => (
-              <button
-                key={item.screen}
-                className={styles.menuItem}
-                onClick={() => { onNavigate(item.screen); closeMenu() }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      )}
-
     </div>
   )
 }

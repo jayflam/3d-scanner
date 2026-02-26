@@ -80,6 +80,7 @@ function ModelScreen() {
         type="file"
         accept=".glb,.gltf"
         className="visually-hidden"
+        style={{ display: 'none' }} 
         onChange={handleGlbSelect}
       />
 

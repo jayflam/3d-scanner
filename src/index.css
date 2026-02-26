@@ -1,0 +1,48 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  height: 100dvh;
+}
+
+body {
+  font-family: 'Lato', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Font variables — all Lato */
+  --font-display: 'Lato', sans-serif;
+  --font-mono:    'Lato', sans-serif;
+
+  /* Colour tokens */
+  --white:      #ffffff;
+  --off-white:  #f7f7f5;
+  --surface:    #f0f0ee;
+  --border:     #e4e4e0;
+  --ink:        #111110;
+  --ink-light:  #555550;
+  --ink-faint:  #999992;
+  --green:      #1a7f52;
+  --amber:      #d97706;
+  --red:        #d93025;
+
+  /* Radius tokens */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+
+  /* Safe-area insets (overridden by env() on devices) */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
