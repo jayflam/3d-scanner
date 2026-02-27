@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   server: {
     allowedHosts: ['devserver-fe-develop--3d-scanner.netlify.app'],
+    hmr: false,
   },
   plugins: [
     react({
