@@ -1,78 +1,38 @@
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Canvas, useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
+import { XR, createXRStore, useXR } from '@react-three/xr'
 import * as THREE from 'three'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Orientation { alpha: number; beta: number; gamma: number }
-type ARState = 'idle' | 'requesting' | 'active' | 'denied'
+type ARStatus = 'idle' | 'requesting' | 'active' | 'denied' | 'unsupported'
 
-// ─── Three.js camera controller ───────────────────────────────────────────────
-// Converts DeviceOrientationEvent angles to a camera quaternion every frame so
-// the Three.js scene appears world-anchored as the user rotates their device.
+// ─── XR Store (module-level singleton) ────────────────────────────────────────
+// createXRStore must not be called inside render. It configures the WebXR session:
+// - 'immersive-ar': the browser enters AR mode using the device camera + SLAM tracking
+// - 'local-floor': reference space where Y=0 is the real-world floor and the origin
+//   is directly below where the user stood when the session started.
 //
-// Technique: standard Three.js DeviceOrientationControls quaternion method.
-//   1. Build an Euler from (beta, -relAlpha, -gamma) in YXZ order.
-//   2. Convert to quaternion.
-//   3. Multiply by _qPortrait (-90° around X) to compensate for the phone being
-//      held upright in portrait instead of lying flat — this is what makes
-//      beta≈90 (phone upright) map to "looking straight ahead" instead of "looking up".
-//
-// Using camera.quaternion instead of camera.rotation avoids gimbal-lock artefacts
-// and prevents the canvas from fighting with Three.js's internal matrix updates.
-// Pre-allocated objects avoid per-frame GC pressure at 60 fps.
+// This gives us true 6DoF tracking: the camera's position AND orientation update as
+// the user physically moves, so the model appears anchored in the real world.
 
-function DeviceCamera({ oRef, initialAlpha }: {
-  oRef: { current: Orientation }
-  initialAlpha: { current: number | null }
-}) {
-  const { camera, gl } = useThree()
-
-  // Pre-allocated — never recreated after mount
-  const _euler    = useRef(new THREE.Euler())
-  // Rotation of -90° around X: maps "device lying flat" → "device held upright"
-  const _qPortrait = useRef(new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5)))
-
-  useEffect(() => {
-    gl.setClearColor(0x000000, 0)   // transparent canvas — camera video shows through
-    camera.position.set(0, 1.6, 0)  // eye height above virtual ground plane
-  }, [camera, gl])
-
-  useFrame(() => {
-    const { alpha, beta, gamma } = oRef.current
-
-    // Capture the first valid compass reading so the car starts directly ahead
-    if (initialAlpha.current === null && alpha !== 0) {
-      initialAlpha.current = alpha
-    }
-    const relAlpha = alpha - (initialAlpha.current ?? 0)
-
-    // Build orientation as Euler in YXZ order (apply heading, then tilt, then roll).
-    // Alpha is negated: a clockwise device turn must produce a clockwise camera turn
-    // so that the virtual car stays fixed in world space (appears to move left when
-    // you turn right — the correct AR anchoring behaviour).
-    _euler.current.set(
-      THREE.MathUtils.degToRad(beta),
-      THREE.MathUtils.degToRad(-relAlpha),
-      THREE.MathUtils.degToRad(-gamma),
-      'YXZ',
-    )
-    camera.quaternion.setFromEuler(_euler.current)
-    // Compensate for phone held upright in portrait mode
-    camera.quaternion.multiply(_qPortrait.current)
-  })
-
-  return null
-}
+const xrStore = createXRStore({
+  hand: false,
+  controller: false,
+})
 
 // ─── GLB Car Model ────────────────────────────────────────────────────────────
-// Normalises the model to a real-world car size (longest axis = 4.5 m) so the
-// distance is consistent regardless of whether the GLB was exported in metres,
-// centimetres, or any other unit. Then places it ~1.5 m (≈5 feet) in front.
+// The model is placed ONCE at a fixed world-space position and never moved again.
+// Because the XR camera pose updates as the user physically walks, the model:
+//   • Gets bigger as you walk toward it (closer in world space → larger projection)
+//   • Gets smaller as you walk away
+//   • Reveals different sides as you walk around it
+//
+// Origin: where the user was standing when AR started, projected to the floor.
+// Model placement: bottom sits on the floor (Y=0), DISTANCE_M metres ahead on -Z.
 
-// Desired distance from camera to the model's centre, in metres (~15 feet).
 const DISTANCE_M = 4.5
 
 function CarModel({ url }: { url: string }) {
@@ -87,7 +47,6 @@ function CarModel({ url }: { url: string }) {
   useFrame(() => {
     if (positioned.current || !groupRef.current) return
 
-    // Measure the model in its native unit
     const nativeBox = new THREE.Box3().setFromObject(groupRef.current)
     if (nativeBox.isEmpty()) return
     positioned.current = true
@@ -95,17 +54,16 @@ function CarModel({ url }: { url: string }) {
     const nativeSize = nativeBox.getSize(new THREE.Vector3())
     const nativeMax = Math.max(nativeSize.x, nativeSize.y, nativeSize.z)
 
-    // Scale so the longest axis equals a real car length (~4.5 m).
-    // This corrects cm/mm exports automatically.
+    // Normalise to real car length (~4.5 m) regardless of export units (m/cm/mm)
     if (nativeMax > 0) {
       groupRef.current.scale.setScalar(4.5 / nativeMax)
     }
 
-    // Recompute box now that scale is applied
+    // Recompute bounds after scale
     const box = new THREE.Box3().setFromObject(groupRef.current)
     const center = box.getCenter(new THREE.Vector3())
 
-    // Bottom of car on ground (Y=0), centered on X, DISTANCE_M ahead on Z
+    // Bottom of car on the virtual ground plane (Y=0), centred on X, DISTANCE_M ahead
     groupRef.current.position.set(
       -center.x,
       -box.min.y,
@@ -120,87 +78,49 @@ function CarModel({ url }: { url: string }) {
   )
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── XR Session Bridge ────────────────────────────────────────────────────────
+// Runs inside the Canvas/XR tree so it can access XR state via useXR(), then
+// propagates the session-active flag back to the parent React component.
+
+function XRSessionSync({ onActive }: { onActive: (active: boolean) => void }) {
+  const session = useXR(s => s.session)
+  useEffect(() => { onActive(!!session) }, [session, onActive])
+  return null
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 interface ARViewerProps {
   glbUrl: string | null
 }
 
 export default function ARViewer({ glbUrl }: ARViewerProps) {
-  const [arState, setArState] = useState<ARState>('idle')
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
-  const orientationRef = useRef<Orientation>({ alpha: 0, beta: 0, gamma: 0 })
-  const initialAlpha = useRef<number | null>(null)
-  const orientHandlerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null)
+  const [status, setStatus] = useState<ARStatus>('idle')
 
-  // Assign the stream to the video element once it renders (state → 'active')
+  // Probe WebXR AR support once on mount
   useEffect(() => {
-    if (arState !== 'active' || !videoRef.current || !streamRef.current) return
-    videoRef.current.srcObject = streamRef.current
-    videoRef.current.play().catch(() => {})
-  }, [arState])
-
-  // Cleanup camera + orientation listener on unmount
-  useEffect(() => {
-    return () => {
-      if (orientHandlerRef.current) {
-        window.removeEventListener('deviceorientation', orientHandlerRef.current)
-      }
-      streamRef.current?.getTracks().forEach(t => t.stop())
-    }
+    const xrNav = (navigator as { xr?: { isSessionSupported: (t: string) => Promise<boolean> } }).xr
+    if (!xrNav?.isSessionSupported) { setStatus('unsupported'); return }
+    xrNav.isSessionSupported('immersive-ar')
+      .then(ok => { if (!ok) setStatus('unsupported') })
+      .catch(() => setStatus('unsupported'))
   }, [])
 
-  const startLiveView = async () => {
-    setArState('requesting')
+  // Called by XRSessionSync whenever the XR session starts or ends
+  const handleSessionActive = useCallback((active: boolean) => {
+    setStatus(prev => {
+      if (active) return 'active'
+      return prev === 'active' ? 'idle' : prev   // session ended → back to idle
+    })
+  }, [])
 
-    // iOS 13+ requires DeviceOrientationEvent.requestPermission() to be called
-    // SYNCHRONOUSLY within a user-gesture handler — before any `await`.
-    // After the first await the gesture context is gone and iOS throws SecurityError.
-    // We fire the permission request here (before any await) and store the Promise.
-    const DevOrient = DeviceOrientationEvent as unknown as {
-      requestPermission?: () => Promise<PermissionState>
-    }
-    const orientPermPromise: Promise<PermissionState> =
-      typeof DevOrient.requestPermission === 'function'
-        ? DevOrient.requestPermission().catch(() => 'denied' as PermissionState)
-        : Promise.resolve('granted' as PermissionState)
-
+  const startAR = async () => {
+    setStatus('requesting')
     try {
-      // 1. Request rear camera; fall back to any camera (desktop / front-only devices)
-      let stream: MediaStream
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
-          audio: false,
-        })
-      } catch {
-        // Retry with minimal constraints (handles some strict iOS camera policies)
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-      }
-      streamRef.current = stream
-
-      // 2. Await orientation permission (already in-flight from above)
-      await orientPermPromise
-      // Orientation errors are non-fatal — model stays static if denied
-
-      // 3. Listen for orientation updates
-      const handler = (e: DeviceOrientationEvent) => {
-        orientationRef.current = {
-          alpha: e.alpha ?? 0,
-          beta: e.beta ?? 0,
-          gamma: e.gamma ?? 0,
-        }
-      }
-      orientHandlerRef.current = handler
-      window.addEventListener('deviceorientation', handler)
-
-      setArState('active')
+      await xrStore.enterAR()
+      // XRSessionSync will set status → 'active' once the session is live
     } catch {
-      // Camera truly unavailable — clean up any partial stream
-      streamRef.current?.getTracks().forEach(t => t.stop())
-      streamRef.current = null
-      setArState('denied')
+      setStatus('denied')
     }
   }
 
@@ -214,97 +134,93 @@ export default function ARViewer({ glbUrl }: ARViewerProps) {
     )
   }
 
-  // ── Idle ──────────────────────────────────────────────────────────────────
-  if (arState === 'idle') {
-    return (
-      <div style={centered}>
-        <button style={primaryBtn} onClick={startLiveView}>
-          START LIVE VIEW
-        </button>
-        <span style={hint}>CAMERA + MOTION ACCESS REQUIRED</span>
-      </div>
-    )
-  }
-
-  // ── Requesting permissions ─────────────────────────────────────────────────
-  if (arState === 'requesting') {
-    return (
-      <div style={centered}>
-        <span style={{ ...hint, color: 'rgba(255,255,255,0.6)' }}>ENABLING CAMERA…</span>
-      </div>
-    )
-  }
-
-  // ── Denied ────────────────────────────────────────────────────────────────
-  if (arState === 'denied') {
+  // ── WebXR AR not supported (desktop, iOS Safari, etc.) ────────────────────
+  if (status === 'unsupported') {
     return (
       <div style={{ ...centered, gap: 12 }}>
         <span style={{ fontSize: '0.78rem', color: '#D93025', letterSpacing: '0.04em' }}>
-          CAMERA UNAVAILABLE
+          AR NOT SUPPORTED
         </span>
-        <span style={{ ...hint, textAlign: 'center', maxWidth: 220 }}>
-          Allow camera access in your browser settings, then reload the page.
+        <span style={{ ...hint, textAlign: 'center', maxWidth: 260 }}>
+          Walk-around AR requires WebXR. Use Chrome on Android or another WebXR-compatible browser.
         </span>
-        <button style={primaryBtn} onClick={startLiveView}>
-          TRY AGAIN
-        </button>
       </div>
     )
   }
 
-  // ── Active — live camera + AR overlay ─────────────────────────────────────
+  // ── AR view ───────────────────────────────────────────────────────────────
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#000' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', background: '#000' }}>
 
-      {/* Live camera feed as background */}
-      <video
-        ref={videoRef}
-        muted
-        playsInline
-        autoPlay
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-        }}
-      />
-
-      {/* Transparent Three.js canvas — GLB model rendered on top of camera */}
+      {/* Three.js canvas with WebXR enabled.
+          In AR mode the XR compositor renders the real camera feed behind the canvas,
+          and the transparent canvas overlays only the 3D model on top. */}
       <Canvas
+        camera={{ fov: 62, near: 0.01, far: 1000 }}
         gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
-        camera={{ fov: 62, near: 0.1, far: 500, position: [0, 1.6, 0] }}
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
       >
-        {/* Lighting */}
-        <ambientLight intensity={0.8} />
-        <directionalLight position={[5, 10, 5]} intensity={1.5} castShadow />
-        <directionalLight position={[-4, 4, -5]} intensity={0.4} />
+        <XR store={xrStore}>
+          {/* Bridge XR session state to parent */}
+          <XRSessionSync onActive={handleSessionActive} />
 
-        {/* Applies device orientation to camera every frame */}
-        <DeviceCamera oRef={orientationRef} initialAlpha={initialAlpha} />
+          {/* Lighting */}
+          <ambientLight intensity={0.8} />
+          <directionalLight position={[5, 10, 5]} intensity={1.5} castShadow />
+          <directionalLight position={[-4, 4, -5]} intensity={0.4} />
 
-        {/* The GLB car model, life-sized (1 unit = 1 m) */}
-        <Suspense fallback={null}>
-          <CarModel key={glbUrl} url={glbUrl} />
-        </Suspense>
+          {/* World-anchored car model — placed once, never moved */}
+          <Suspense fallback={null}>
+            <CarModel key={glbUrl} url={glbUrl} />
+          </Suspense>
+        </XR>
       </Canvas>
 
-      {/* Instruction hint */}
-      <span style={{
-        position: 'absolute',
-        bottom: 12,
-        left: 0,
-        right: 0,
-        textAlign: 'center',
-        fontSize: '0.56rem',
-        color: 'rgba(255,255,255,0.55)',
-        letterSpacing: '0.08em',
-        pointerEvents: 'none',
-      }}>
-        MOVE AROUND TO EXPLORE THE VEHICLE
-      </span>
+      {/* Overlay UI — hidden once the XR session takes over the display */}
+      {status === 'idle' && (
+        <div style={{ ...centered, position: 'absolute', inset: 0 }}>
+          <button style={primaryBtn} onClick={startAR}>
+            START AR
+          </button>
+          <span style={hint}>CAMERA ACCESS REQUIRED</span>
+        </div>
+      )}
+
+      {status === 'requesting' && (
+        <div style={{ ...centered, position: 'absolute', inset: 0 }}>
+          <span style={{ ...hint, color: 'rgba(255,255,255,0.6)' }}>STARTING AR…</span>
+        </div>
+      )}
+
+      {status === 'denied' && (
+        <div style={{ ...centered, position: 'absolute', inset: 0, gap: 12 }}>
+          <span style={{ fontSize: '0.78rem', color: '#D93025', letterSpacing: '0.04em' }}>
+            AR UNAVAILABLE
+          </span>
+          <span style={{ ...hint, textAlign: 'center', maxWidth: 220 }}>
+            Allow camera access in your browser settings, then reload the page.
+          </span>
+          <button style={primaryBtn} onClick={startAR}>
+            TRY AGAIN
+          </button>
+        </div>
+      )}
+
+      {status === 'active' && (
+        <span style={{
+          position: 'absolute',
+          bottom: 12,
+          left: 0,
+          right: 0,
+          textAlign: 'center',
+          fontSize: '0.56rem',
+          color: 'rgba(255,255,255,0.55)',
+          letterSpacing: '0.08em',
+          pointerEvents: 'none',
+        }}>
+          WALK AROUND TO EXPLORE THE VEHICLE
+        </span>
+      )}
 
     </div>
   )
