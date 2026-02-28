@@ -10,8 +10,19 @@ interface Orientation { alpha: number; beta: number; gamma: number }
 type ARState = 'idle' | 'requesting' | 'active' | 'denied'
 
 // ─── Three.js camera controller ───────────────────────────────────────────────
-// Reads device orientation every frame and applies it to the Three.js camera,
-// making the scene appear world-anchored as the user moves the device.
+// Converts DeviceOrientationEvent angles to a camera quaternion every frame so
+// the Three.js scene appears world-anchored as the user rotates their device.
+//
+// Technique: standard Three.js DeviceOrientationControls quaternion method.
+//   1. Build an Euler from (beta, -relAlpha, -gamma) in YXZ order.
+//   2. Convert to quaternion.
+//   3. Multiply by _qPortrait (-90° around X) to compensate for the phone being
+//      held upright in portrait instead of lying flat — this is what makes
+//      beta≈90 (phone upright) map to "looking straight ahead" instead of "looking up".
+//
+// Using camera.quaternion instead of camera.rotation avoids gimbal-lock artefacts
+// and prevents the canvas from fighting with Three.js's internal matrix updates.
+// Pre-allocated objects avoid per-frame GC pressure at 60 fps.
 
 function DeviceCamera({ oRef, initialAlpha }: {
   oRef: { current: Orientation }
@@ -19,25 +30,38 @@ function DeviceCamera({ oRef, initialAlpha }: {
 }) {
   const { camera, gl } = useThree()
 
+  // Pre-allocated — never recreated after mount
+  const _euler    = useRef(new THREE.Euler())
+  // Rotation of -90° around X: maps "device lying flat" → "device held upright"
+  const _qPortrait = useRef(new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5)))
+
   useEffect(() => {
-    gl.setClearColor(0x000000, 0)  // transparent canvas — camera video shows through
-    camera.rotation.order = 'YXZ'
+    gl.setClearColor(0x000000, 0)   // transparent canvas — camera video shows through
+    camera.position.set(0, 1.6, 0)  // eye height above virtual ground plane
   }, [camera, gl])
 
   useFrame(() => {
     const { alpha, beta, gamma } = oRef.current
 
-    // First valid reading: record it as the "forward" heading
+    // Capture the first valid compass reading so the car starts directly ahead
     if (initialAlpha.current === null && alpha !== 0) {
       initialAlpha.current = alpha
     }
+    const relAlpha = alpha - (initialAlpha.current ?? 0)
 
-    const headingOffset = initialAlpha.current ?? 0
-
-    // Phone held in portrait, tilted to face user: beta ≈ 90 = looking straight ahead
-    camera.rotation.x = THREE.MathUtils.degToRad(beta - 90)
-    camera.rotation.y = THREE.MathUtils.degToRad(-(alpha - headingOffset))
-    camera.rotation.z = THREE.MathUtils.degToRad(-gamma)
+    // Build orientation as Euler in YXZ order (apply heading, then tilt, then roll).
+    // Alpha is negated: a clockwise device turn must produce a clockwise camera turn
+    // so that the virtual car stays fixed in world space (appears to move left when
+    // you turn right — the correct AR anchoring behaviour).
+    _euler.current.set(
+      THREE.MathUtils.degToRad(beta),
+      THREE.MathUtils.degToRad(-relAlpha),
+      THREE.MathUtils.degToRad(-gamma),
+      'YXZ',
+    )
+    camera.quaternion.setFromEuler(_euler.current)
+    // Compensate for phone held upright in portrait mode
+    camera.quaternion.multiply(_qPortrait.current)
   })
 
   return null
@@ -48,8 +72,8 @@ function DeviceCamera({ oRef, initialAlpha }: {
 // distance is consistent regardless of whether the GLB was exported in metres,
 // centimetres, or any other unit. Then places it ~1.5 m (≈5 feet) in front.
 
-// Desired distance from camera to the model's centre, in metres.
-const DISTANCE_M = 1.5
+// Desired distance from camera to the model's centre, in metres (~15 feet).
+const DISTANCE_M = 4.5
 
 function CarModel({ url }: { url: string }) {
   const { scene } = useGLTF(url)
