@@ -7,7 +7,7 @@ import styles from './ScanScreen.module.css'
 const API_ENDPOINT = '/api/assess'
 
 const MAX_PHOTOS = 10
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
 
 type MediaItem = { type: 'photo'; blob: Blob; url: string } | { type: 'video'; blob: Blob; url: string }
 
@@ -56,30 +56,36 @@ function ScanScreen() {
     }
   }, [cameraFacing, startCamera])
 
-  const autoSavePhoto = async (blob: Blob) => {
-    const file = new File([blob], `scan_${Date.now()}.jpg`, { type: 'image/jpeg' })
+  const saveToDevice = async () => {
+    const photos = capturedItems.filter(i => i.type === 'photo')
+    if (photos.length === 0) return
 
-    // Web Share API: opens native share sheet on iOS/Android where the user
-    // can save directly to Camera Roll / Photos with one tap.
-    if (navigator.canShare?.({ files: [file] })) {
+    const files = photos.map((item, idx) =>
+      new File([item.blob], `scan_${Date.now()}_${idx + 1}.jpg`, { type: 'image/jpeg' })
+    )
+
+    if (isIOS && navigator.canShare?.({ files })) {
+      // iOS: Web Share API with image files — the OS sheet surfaces
+      // "Save to Camera Roll" / "Save Image" as the primary action.
       try {
-        await navigator.share({ files: [file] })
-        return
+        await navigator.share({ files })
       } catch (err) {
-        if ((err as Error).name === 'AbortError') return // user dismissed share sheet
-        // fall through to download fallback
+        if ((err as Error).name === 'AbortError') return // user dismissed
+      }
+    } else {
+      // Android + desktop: programmatic download per file — silent, no share sheet.
+      // Android's media scanner will index .jpg files from Downloads into the Gallery.
+      for (const file of files) {
+        const url = URL.createObjectURL(file)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = file.name
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
       }
     }
-
-    // Fallback for desktop or browsers without file-share support
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = file.name
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
   }
 
   const capturePhoto = () => {
@@ -98,7 +104,6 @@ function ScanScreen() {
       if (!blob) return
       const url = URL.createObjectURL(blob)
       setCapturedItems(prev => [...prev, { type: 'photo', blob, url }])
-      if (isMobile) autoSavePhoto(blob)
     }, 'image/jpeg', 0.92)
   }
 
@@ -307,6 +312,11 @@ function ScanScreen() {
       >
         Submit for Assessment{capturedItems.length > 0 ? ` (${capturedItems.length})` : ''}
       </button>
+      {photoCount > 0 && (
+        <button className={styles.libraryBtn} onClick={saveToDevice}>
+          Save to Camera Roll ({photoCount})
+        </button>
+      )}
       <button className={styles.libraryBtn} onClick={() => fileInputRef.current?.click()}>
         Choose from Library
       </button>

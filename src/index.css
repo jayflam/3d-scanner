@@ -46,8 +46,3 @@ button {
   border: none;
   background: transparent;
 }
-
-/* model-viewer web component — dark poster matches app background */
-model-viewer {
-  --poster-color: #080810;
-}
