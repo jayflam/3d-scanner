@@ -113,23 +113,36 @@ export default function ARViewer({ glbUrl }: ARViewerProps) {
 
   const startLiveView = async () => {
     setArState('requesting')
+
+    // iOS 13+ requires DeviceOrientationEvent.requestPermission() to be called
+    // SYNCHRONOUSLY within a user-gesture handler — before any `await`.
+    // After the first await the gesture context is gone and iOS throws SecurityError.
+    // We fire the permission request here (before any await) and store the Promise.
+    const DevOrient = DeviceOrientationEvent as unknown as {
+      requestPermission?: () => Promise<PermissionState>
+    }
+    const orientPermPromise: Promise<PermissionState> =
+      typeof DevOrient.requestPermission === 'function'
+        ? DevOrient.requestPermission().catch(() => 'denied' as PermissionState)
+        : Promise.resolve('granted' as PermissionState)
+
     try {
-      // 1. Request rear camera (falls back to any camera on desktop)
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
-        audio: false,
-      })
+      // 1. Request rear camera; fall back to any camera (desktop / front-only devices)
+      let stream: MediaStream
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false,
+        })
+      } catch {
+        // Retry with minimal constraints (handles some strict iOS camera policies)
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      }
       streamRef.current = stream
 
-      // 2. Device orientation permission — iOS 13+ requires a user-gesture call
-      const DevOrient = DeviceOrientationEvent as unknown as {
-        requestPermission?: () => Promise<PermissionState>
-      }
-      if (typeof DevOrient.requestPermission === 'function') {
-        // Must be called synchronously inside a user-gesture handler
-        await DevOrient.requestPermission()
-        // Even if denied, continue — model just won't rotate
-      }
+      // 2. Await orientation permission (already in-flight from above)
+      await orientPermPromise
+      // Orientation errors are non-fatal — model stays static if denied
 
       // 3. Listen for orientation updates
       const handler = (e: DeviceOrientationEvent) => {
@@ -144,6 +157,9 @@ export default function ARViewer({ glbUrl }: ARViewerProps) {
 
       setArState('active')
     } catch {
+      // Camera truly unavailable — clean up any partial stream
+      streamRef.current?.getTracks().forEach(t => t.stop())
+      streamRef.current = null
       setArState('denied')
     }
   }
