@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
-import ModelViewer from './ModelViewer'
+import ARViewer from './ARViewer'
 import type { AssessmentResult, DamageSeverity } from '../types'
 import styles from './ModelScreen.module.css'
 
@@ -53,16 +53,16 @@ function ModelScreen() {
 
   return (
     <div className={styles.container}>
-      {/* 3D Viewport */}
-      <div className={styles.viewport}>
-        <ModelViewer glbUrl={glbUrl} />
+      {/* Live View section */}
+      <p className={styles.sectionTitle} style={{ paddingTop: '14px' }}>Live View</p>
+      <div className={styles.arViewport}>
+        <ARViewer glbUrl={glbUrl} />
         {glbName && (
           <div className={styles.viewportOverlay}>
             <span className={styles.overlayBadge}>GLB · {glbName}</span>
             <span className={styles.overlayBadge}>INTERACTIVE</span>
           </div>
         )}
-        <div className={styles.viewportHint}>DRAG · PINCH · ROTATE</div>
       </div>
 
       {/* File picker */}
