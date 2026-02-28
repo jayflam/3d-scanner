@@ -56,13 +56,30 @@ function ScanScreen() {
     }
   }, [cameraFacing, startCamera])
 
-  const autoSavePhoto = (url: string) => {
+  const autoSavePhoto = async (blob: Blob) => {
+    const file = new File([blob], `scan_${Date.now()}.jpg`, { type: 'image/jpeg' })
+
+    // Web Share API: opens native share sheet on iOS/Android where the user
+    // can save directly to Camera Roll / Photos with one tap.
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] })
+        return
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return // user dismissed share sheet
+        // fall through to download fallback
+      }
+    }
+
+    // Fallback for desktop or browsers without file-share support
+    const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `scan_${Date.now()}.jpg`
+    a.download = file.name
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   const capturePhoto = () => {
@@ -81,7 +98,7 @@ function ScanScreen() {
       if (!blob) return
       const url = URL.createObjectURL(blob)
       setCapturedItems(prev => [...prev, { type: 'photo', blob, url }])
-      if (isMobile) autoSavePhoto(url)
+      if (isMobile) autoSavePhoto(blob)
     }, 'image/jpeg', 0.92)
   }
 
