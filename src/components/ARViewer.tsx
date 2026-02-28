@@ -44,8 +44,12 @@ function DeviceCamera({ oRef, initialAlpha }: {
 }
 
 // ─── GLB Car Model ────────────────────────────────────────────────────────────
-// Loads the model and positions it so it sits on an imaginary ground plane
-// 6 m ahead of the camera, centered left-right.
+// Normalises the model to a real-world car size (longest axis = 4.5 m) so the
+// distance is consistent regardless of whether the GLB was exported in metres,
+// centimetres, or any other unit. Then places it ~1.5 m (≈5 feet) in front.
+
+// Desired distance from camera to the model's centre, in metres.
+const DISTANCE_M = 1.5
 
 function CarModel({ url }: { url: string }) {
   const { scene } = useGLTF(url)
@@ -53,23 +57,35 @@ function CarModel({ url }: { url: string }) {
   const positioned = useRef(false)
 
   useEffect(() => {
-    // Reset when a new model is loaded
     positioned.current = false
   }, [url])
 
   useFrame(() => {
     if (positioned.current || !groupRef.current) return
-    const box = new THREE.Box3().setFromObject(groupRef.current)
-    if (box.isEmpty()) return
 
+    // Measure the model in its native unit
+    const nativeBox = new THREE.Box3().setFromObject(groupRef.current)
+    if (nativeBox.isEmpty()) return
     positioned.current = true
+
+    const nativeSize = nativeBox.getSize(new THREE.Vector3())
+    const nativeMax = Math.max(nativeSize.x, nativeSize.y, nativeSize.z)
+
+    // Scale so the longest axis equals a real car length (~4.5 m).
+    // This corrects cm/mm exports automatically.
+    if (nativeMax > 0) {
+      groupRef.current.scale.setScalar(4.5 / nativeMax)
+    }
+
+    // Recompute box now that scale is applied
+    const box = new THREE.Box3().setFromObject(groupRef.current)
     const center = box.getCenter(new THREE.Vector3())
 
-    // Sit bottom of car on Y=0 (ground), center on X, place 6 m ahead on Z
+    // Bottom of car on ground (Y=0), centered on X, DISTANCE_M ahead on Z
     groupRef.current.position.set(
       -center.x,
       -box.min.y,
-      -center.z - 6,
+      -center.z - DISTANCE_M,
     )
   })
 
