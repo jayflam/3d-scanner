@@ -340,4 +340,17 @@
   font-weight: 500;
 }
 
+.photoLimitError {
+  margin: 0 14px 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(217, 48, 37, 0.6);
+  background: rgba(217, 48, 37, 0.1);
+}
+
+.photoLimitError p {
+  font-size: 0.72rem;
+  color: #ff6b6b;
+}
+
 .bottomSpacer { height: 20px; }

@@ -6,6 +6,9 @@ import styles from './ScanScreen.module.css'
 // Replace with your actual backend API URL
 const API_ENDPOINT = '/api/assess'
 
+const MAX_PHOTOS = 10
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
 type MediaItem = { type: 'photo'; blob: Blob; url: string } | { type: 'video'; blob: Blob; url: string }
 
 function ScanScreen() {
@@ -22,6 +25,7 @@ function ScanScreen() {
   const [cameraFacing, setCameraFacing] = useState<'environment' | 'user'>('environment')
   const [cameraReady, setCameraReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState<string | null>(null)
 
   const startCamera = useCallback(async (facing: 'environment' | 'user') => {
     try {
@@ -52,8 +56,23 @@ function ScanScreen() {
     }
   }, [cameraFacing, startCamera])
 
+  const autoSavePhoto = (url: string) => {
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `scan_${Date.now()}.jpg`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
   const capturePhoto = () => {
     if (!videoRef.current || !cameraReady) return
+    const photoCount = capturedItems.filter(i => i.type === 'photo').length
+    if (photoCount >= MAX_PHOTOS) {
+      setPhotoError(`Photo limit reached (${MAX_PHOTOS} max). Remove a photo to take another.`)
+      return
+    }
+    setPhotoError(null)
     const canvas = document.createElement('canvas')
     canvas.width = videoRef.current.videoWidth
     canvas.height = videoRef.current.videoHeight
@@ -62,6 +81,7 @@ function ScanScreen() {
       if (!blob) return
       const url = URL.createObjectURL(blob)
       setCapturedItems(prev => [...prev, { type: 'photo', blob, url }])
+      if (isMobile) autoSavePhoto(url)
     }, 'image/jpeg', 0.92)
   }
 
@@ -86,7 +106,7 @@ function ScanScreen() {
   }
 
   const handleShutter = () => {
-    if (mode === 'photo' || mode === 'multi') {
+    if (mode === 'photo') {
       capturePhoto()
     } else if (mode === 'video') {
       isRecording ? stopRecording() : startRecording()
@@ -95,11 +115,24 @@ function ScanScreen() {
 
   const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
-    files.forEach(file => {
+    const currentPhotoCount = capturedItems.filter(i => i.type === 'photo').length
+    let photosAdded = 0
+    const newItems: MediaItem[] = []
+
+    for (const file of files) {
+      const type: 'photo' | 'video' = file.type.startsWith('video') ? 'video' : 'photo'
+      if (type === 'photo' && currentPhotoCount + photosAdded >= MAX_PHOTOS) {
+        setPhotoError(`Photo limit reached (${MAX_PHOTOS} max). Some photos were not added.`)
+        continue
+      }
       const url = URL.createObjectURL(file)
-      const type = file.type.startsWith('video') ? 'video' : 'photo'
-      setCapturedItems(prev => [...prev, { type, blob: file, url }])
-    })
+      newItems.push({ type, blob: file, url })
+      if (type === 'photo') photosAdded++
+    }
+
+    if (newItems.length > 0) {
+      setCapturedItems(prev => [...prev, ...newItems])
+    }
   }
 
   const removeItem = (index: number) => {
@@ -107,6 +140,7 @@ function ScanScreen() {
       URL.revokeObjectURL(prev[index].url)
       return prev.filter((_, i) => i !== index)
     })
+    setPhotoError(null)
   }
 
   const submitForAssessment = async () => {
@@ -137,7 +171,8 @@ function ScanScreen() {
     }
   }
 
-  const angleCount = Math.min(capturedItems.length, 6)
+  const photoCount = capturedItems.filter(i => i.type === 'photo').length
+  const angleCount = Math.min(photoCount, MAX_PHOTOS)
 
   return (
     <div className={styles.container}>
@@ -166,7 +201,7 @@ function ScanScreen() {
 
       {/* Mode tabs */}
       <div className={styles.modeTabs}>
-        {(['photo', 'video', 'multi'] as CaptureMode[]).map(m => (
+        {(['photo', 'video'] as CaptureMode[]).map(m => (
           <button
             key={m}
             className={`${styles.modeTab} ${mode === m ? styles.activeTab : ''}`}
@@ -183,7 +218,7 @@ function ScanScreen() {
         <button
           className={`${styles.shutterBtn} ${isRecording ? styles.recording : ''}`}
           onClick={handleShutter}
-          disabled={!cameraReady}
+          disabled={!cameraReady || (mode === 'photo' && photoCount >= MAX_PHOTOS)}
           aria-label={mode === 'video' ? (isRecording ? 'Stop recording' : 'Start recording') : 'Take photo'}
         >
           <div className={styles.shutterInner} />
@@ -199,12 +234,19 @@ function ScanScreen() {
         </button>
       </div>
 
+      {/* Photo limit error */}
+      {photoError && (
+        <div className={styles.photoLimitError}>
+          <p>{photoError}</p>
+        </div>
+      )}
+
       {/* Angle progress */}
-      {(mode === 'multi' || capturedItems.length > 0) && (
+      {capturedItems.length > 0 && (
         <div className={styles.angleGuide}>
-          <p className={styles.angleTitle}>Capture Progress — {capturedItems.length} file{capturedItems.length !== 1 ? 's' : ''}</p>
+          <p className={styles.angleTitle}>Photos — {photoCount} / {MAX_PHOTOS}</p>
           <div className={styles.angleDots}>
-            {Array.from({ length: 6 }).map((_, i) => (
+            {Array.from({ length: MAX_PHOTOS }).map((_, i) => (
               <div
                 key={i}
                 className={`${styles.dot}
@@ -257,7 +299,7 @@ function ScanScreen() {
         type="file"
         accept="image/*,video/*"
         multiple
-        style={{ display: 'none' }} 
+        style={{ display: 'none' }}
         className="visually-hidden"
         onChange={handleFileUpload}
       />

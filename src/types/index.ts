@@ -1,6 +1,6 @@
 export type Screen = 'home' | 'scan' | 'model' | 'reports';
 
-export type CaptureMode = 'photo' | 'video' | 'multi';
+export type CaptureMode = 'photo' | 'video';
 
 export type DamageSeverity = 'high' | 'medium' | 'low' | 'clear';
 
