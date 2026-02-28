@@ -9,7 +9,8 @@
   background: #0A0A0A;
   margin: 14px;
   border-radius: var(--radius-lg);
-  height: 230px;
+  height: 75dvh;
+  flex-shrink: 0;
   position: relative;
   overflow: hidden;
   display: flex;
