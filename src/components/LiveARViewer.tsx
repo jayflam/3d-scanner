@@ -114,13 +114,20 @@ export default function LiveARViewer({ glbUrl }: LiveARViewerProps) {
   const pointerMap = useRef(new Map<number, { x: number; y: number }>())
 
   // ── Camera stream ───────────────────────────────────────────────────────────
+  // Depends on glbUrl: the <video> element only mounts after a model is loaded,
+  // so we must wait until glbUrl is set before calling getUserMedia.
   useEffect(() => {
+    if (!glbUrl) return
+
     let stream: MediaStream | null = null
+    setCamReady(false)
+    setError(null)
+    setStatusMsg('STARTING CAMERA…')
 
     navigator.mediaDevices
       .getUserMedia({
         video: {
-          facingMode: 'environment',
+          facingMode: { ideal: 'environment' },  // prefer rear, falls back on desktop
           width:  { ideal: 1280 },
           height: { ideal: 720 },
         },
@@ -132,14 +139,14 @@ export default function LiveARViewer({ glbUrl }: LiveARViewerProps) {
         v.srcObject = s
         v.onloadedmetadata = () => {
           v.play()
-          setCamReady(true)
-          setStatusMsg('INITIALIZING AI…')
+            .then(() => { setCamReady(true); setStatusMsg('INITIALIZING AI…') })
+            .catch(() => setError('VIDEO PLAYBACK BLOCKED'))
         }
       })
       .catch(() => setError('CAMERA ACCESS DENIED'))
 
     return () => { stream?.getTracks().forEach(t => t.stop()) }
-  }, [])
+  }, [glbUrl])
 
   // ── MediaPipe segmenter init ────────────────────────────────────────────────
   useEffect(() => {
