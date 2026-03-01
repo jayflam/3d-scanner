@@ -6,6 +6,9 @@ export default defineConfig({
   server: {
     allowedHosts: ['devserver-fe-develop--spaceframeio.netlify.app']
   },
+  optimizeDeps: {
+    exclude: ['@mediapipe/tasks-vision'],
+  },
   plugins: [
     react({
       babel: {

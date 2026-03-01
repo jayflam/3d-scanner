@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
-import ARViewer from './ARViewer'
+// import ARViewer from './ARViewer'
+import LiveARViewer from './LiveARViewer'
 import type { AssessmentResult, DamageSeverity } from '../types'
 import styles from './ModelScreen.module.css'
 
@@ -56,7 +57,8 @@ function ModelScreen() {
       {/* Live View section */}
       <p className={styles.sectionTitle} style={{ paddingTop: '14px' }}>Live View</p>
       <div className={styles.arViewport}>
-        <ARViewer glbUrl={glbUrl} />
+        {/* <ARViewer glbUrl={glbUrl} /> */}
+        <LiveARViewer glbUrl={glbUrl} />
         {glbName && (
           <div className={styles.viewportOverlay}>
             <span className={styles.overlayBadge}>GLB · {glbName}</span>
