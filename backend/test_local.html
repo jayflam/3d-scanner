@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Car Damage Quote — Local Test</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; padding: 2rem; color: #1a1a1a; }
+    h1 { font-size: 1.5rem; margin-bottom: 1.5rem; }
+    .card { background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1rem; }
+    label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
+    input[type="file"] { margin-bottom: 1rem; }
+    button { background: #2563eb; color: #fff; border: none; padding: 0.6rem 1.5rem; border-radius: 8px; font-size: 0.95rem; cursor: pointer; }
+    button:disabled { background: #93c5fd; cursor: not-allowed; }
+    .progress-bar { width: 100%; height: 12px; background: #e5e7eb; border-radius: 6px; overflow: hidden; margin: 0.5rem 0; }
+    .progress-fill { height: 100%; background: #2563eb; transition: width 0.3s; }
+    .status-msg { font-size: 0.875rem; color: #6b7280; }
+    .log { background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 1rem; font-family: "SF Mono", Menlo, monospace; font-size: 0.8rem; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 800px) { .result-grid { grid-template-columns: 1fr; } }
+    .model-frame { width: 100%; height: 400px; border: none; border-radius: 8px; background: #e5e7eb; }
+    .part { border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 0.5rem; }
+    .part-header { display: flex; justify-content: space-between; align-items: center; }
+    .part-name { font-weight: 600; }
+    .badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; font-weight: 600; }
+    .badge-minor { background: #dcfce7; color: #166534; }
+    .badge-moderate { background: #fef9c3; color: #854d0e; }
+    .badge-severe { background: #fee2e2; color: #991b1b; }
+    .cost-total { background: #eff6ff; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+    .cost-total .amount { font-size: 1.5rem; font-weight: 700; color: #1e40af; }
+    #preview-img { max-width: 200px; border-radius: 8px; margin-top: 0.5rem; display: none; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Car Damage Quote — Local Backend Test</h1>
+
+  <!-- Upload -->
+  <div class="card">
+    <label>Backend URL</label>
+    <input type="text" id="base-url" value="http://localhost:8000" style="width:100%;padding:0.4rem;border:1px solid #d1d5db;border-radius:6px;margin-bottom:1rem;" />
+
+    <label>Upload a car damage photo</label>
+    <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" />
+    <img id="preview-img" />
+    <br />
+    <button id="upload-btn" onclick="startUpload()">Upload &amp; Process</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="card hidden" id="progress-card">
+    <label>Progress</label>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <p class="status-msg" id="status-msg">Waiting…</p>
+  </div>
+
+  <!-- Results -->
+  <div class="hidden" id="results-section">
+    <div class="result-grid">
+      <!-- 3D model -->
+      <div class="card">
+        <label>3D Model</label>
+        <p style="font-size:0.85rem;color:#6b7280;margin-bottom:0.5rem;">
+          Interactive viewer via
+          <a href="https://gltf-viewer.donmccurdy.com" target="_blank">gltf-viewer.donmccurdy.com</a>.
+          You can also download the GLB below.
+        </p>
+        <iframe id="model-frame" class="model-frame"></iframe>
+        <br />
+        <a id="download-link" href="#" download style="display:inline-block;margin-top:0.5rem;">Download .glb file</a>
+      </div>
+
+      <!-- Quote -->
+      <div class="card">
+        <label>Damage Assessment</label>
+        <div id="assessment-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="card" style="margin-top:1rem;">
+    <label>Request / Response Log</label>
+    <div class="log" id="log"></div>
+  </div>
+
+  <script>
+    const logEl = document.getElementById("log");
+    function log(msg) {
+      const ts = new Date().toLocaleTimeString();
+      logEl.textContent += `[${ts}] ${msg}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Preview selected image
+    document.getElementById("file-input").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const img = document.getElementById("preview-img");
+      img.src = URL.createObjectURL(file);
+      img.style.display = "block";
+    });
+
+    async function startUpload() {
+      const baseUrl = document.getElementById("base-url").value.replace(/\/+$/, "");
+      const fileInput = document.getElementById("file-input");
+      const file = fileInput.files[0];
+      if (!file) { alert("Select an image first"); return; }
+
+      const btn = document.getElementById("upload-btn");
+      btn.disabled = true;
+
+      const progressCard = document.getElementById("progress-card");
+      const progressFill = document.getElementById("progress-fill");
+      const statusMsg = document.getElementById("status-msg");
+      const resultsSection = document.getElementById("results-section");
+      progressCard.classList.remove("hidden");
+      resultsSection.classList.add("hidden");
+
+      try {
+        // 1. Health check
+        log("GET /api/health");
+        const healthRes = await fetch(`${baseUrl}/api/health`);
+        const healthJson = await healthRes.json();
+        log(`  → ${JSON.stringify(healthJson)}`);
+
+        // 2. Upload
+        log(`POST /api/upload  (file: ${file.name}, ${(file.size/1024).toFixed(1)} KB)`);
+        const form = new FormData();
+        form.append("file", file);
+        const uploadRes = await fetch(`${baseUrl}/api/upload`, { method: "POST", body: form });
+        if (!uploadRes.ok) {
+          const err = await uploadRes.json();
+          throw new Error(err.detail || `Upload failed: ${uploadRes.status}`);
+        }
+        const upload = await uploadRes.json();
+        log(`  → ${JSON.stringify(upload)}`);
+        const jobId = upload.job_id;
+
+        // 3. WebSocket progress
+        const wsUrl = baseUrl.replace(/^http/, "ws") + `/ws/${jobId}`;
+        log(`WS ${wsUrl}`);
+
+        await new Promise((resolve, reject) => {
+          const ws = new WebSocket(wsUrl);
+          ws.onmessage = (event) => {
+            const update = JSON.parse(event.data);
+            log(`  ← WS: status=${update.status}  progress=${update.progress_pct}%  msg=${update.message}`);
+            progressFill.style.width = update.progress_pct + "%";
+            statusMsg.textContent = `${update.status} — ${update.message}`;
+            if (update.status === "complete") { ws.close(); resolve(); }
+            if (update.status === "failed")  { ws.close(); reject(new Error(update.message)); }
+          };
+          ws.onerror = () => {
+            log("  ✗ WebSocket error — falling back to polling");
+            ws.close();
+            pollUntilDone(baseUrl, jobId, progressFill, statusMsg).then(resolve).catch(reject);
+          };
+        });
+
+        // 4. Fetch result
+        log(`GET /api/jobs/${jobId}/result`);
+        const resultRes = await fetch(`${baseUrl}/api/jobs/${jobId}/result`);
+        const result = await resultRes.json();
+        log(`  → ${JSON.stringify(result, null, 2)}`);
+
+        // 5. Show 3D model
+        const modelUrl = `${baseUrl}/api/jobs/${jobId}/model`;
+        log(`GET ${modelUrl}  (GLB download)`);
+        document.getElementById("download-link").href = modelUrl;
+        document.getElementById("model-frame").src =
+          `https://gltf-viewer.donmccurdy.com/#model=${encodeURIComponent(modelUrl)}`;
+
+        // 6. Render assessment
+        renderAssessment(result.assessment);
+        resultsSection.classList.remove("hidden");
+        log("Done ✓");
+
+      } catch (err) {
+        log(`ERROR: ${err.message}`);
+        statusMsg.textContent = `Failed: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function pollUntilDone(baseUrl, jobId, progressFill, statusMsg) {
+      const deadline = Date.now() + 120_000;
+      while (Date.now() < deadline) {
+        const res = await fetch(`${baseUrl}/api/jobs/${jobId}`);
+        const body = await res.json();
+        log(`  poll → status=${body.status}  progress=${body.progress_pct}%`);
+        progressFill.style.width = body.progress_pct + "%";
+        statusMsg.textContent = `${body.status} — ${body.message}`;
+        if (body.status === "complete") return;
+        if (body.status === "failed") throw new Error(body.message);
+        await new Promise(r => setTimeout(r, 500));
+      }
+      throw new Error("Timeout waiting for job to complete");
+    }
+
+    function renderAssessment(assessment) {
+      if (!assessment) return;
+      const container = document.getElementById("assessment-container");
+      let html = `
+        <p style="margin-bottom:0.25rem;"><strong>${assessment.vehicle_description}</strong></p>
+        <p style="font-size:0.9rem;color:#6b7280;margin-bottom:1rem;">${assessment.summary}</p>
+        <div class="cost-total">
+          <div style="font-size:0.85rem;color:#1e40af;">Total Estimated Cost</div>
+          <div class="amount">$${assessment.total_cost_low.toLocaleString()} – $${assessment.total_cost_high.toLocaleString()}</div>
+          <div style="font-size:0.85rem;margin-top:0.25rem;">Overall severity:
+            <span class="badge badge-${assessment.overall_severity}">${assessment.overall_severity}</span>
+          </div>
+        </div>
+      `;
+      for (const part of assessment.parts) {
+        html += `
+          <div class="part">
+            <div class="part-header">
+              <span class="part-name">${part.part_name}</span>
+              <span class="badge badge-${part.severity}">${part.severity}</span>
+            </div>
+            <p style="font-size:0.85rem;color:#6b7280;margin:0.25rem 0;">${part.description}</p>
+            <div style="display:flex;justify-content:space-between;font-size:0.9rem;">
+              <span>$${part.cost_low.toLocaleString()} – $${part.cost_high.toLocaleString()}</span>
+              <span style="font-size:0.75rem;text-transform:uppercase;color:#9ca3af;">${part.repair_type}</span>
+            </div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+  </script>
+</body>
+</html>
