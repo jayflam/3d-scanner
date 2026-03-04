@@ -37,12 +37,13 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     except Exception as exc:
         checks["database"] = f"error: {exc}"
 
-    # Check Redis
+    # Check Redis (use async client to avoid blocking event loop)
     try:
-        import redis as redis_lib
+        import redis.asyncio as aioredis
 
-        r = redis_lib.from_url(settings.redis_url, socket_connect_timeout=2)
-        r.ping()
+        r = aioredis.from_url(settings.redis_url, socket_connect_timeout=2)
+        await r.ping()
+        await r.aclose()
         checks["redis"] = "ok"
     except Exception:
         checks["redis"] = "unavailable"

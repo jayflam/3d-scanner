@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 
 # Stub heavy deps before any app imports
 for mod in ("torch", "trimesh", "trimesh.visual", "trimesh.visual.material",
-            "xatlas", "numpy", "einops", "rembg", "rembg.sessions",
+            "xatlas", "einops", "rembg", "rembg.sessions",
             "cv2", "redis", "celery", "ffmpeg"):
     sys.modules.setdefault(mod, MagicMock())
 fake_tsr = MagicMock()

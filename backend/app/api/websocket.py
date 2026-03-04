@@ -1,8 +1,11 @@
 """WebSocket endpoints for real-time job progress updates.
 
 Two WebSocket endpoints:
-  /ws/{job_id}                    — Legacy MVP: in-memory job manager
   /ws/v1/assessments/{id}/status  — V1: Redis pub/sub from Celery tasks
+  /ws/{job_id}                    — Legacy MVP: in-memory job manager
+
+NOTE: V1 route MUST be registered before the wildcard /ws/{job_id} route,
+otherwise the wildcard captures /ws/v1/... requests first.
 """
 
 from __future__ import annotations
@@ -34,63 +37,8 @@ def _mgr() -> JobManager:
 
 
 # ---------------------------------------------------------------------------
-# Legacy MVP WebSocket (in-memory job manager)
-# ---------------------------------------------------------------------------
-
-
-@ws_router.websocket("/ws/{job_id}")
-async def job_progress_ws(websocket: WebSocket, job_id: str):
-    mgr = _mgr()
-    job = mgr.get(job_id)
-    if job is None:
-        await websocket.close(code=4004, reason="Job not found")
-        return
-
-    await websocket.accept()
-
-    done = asyncio.Event()
-
-    async def _on_update(update: ProgressUpdate) -> None:
-        try:
-            await websocket.send_text(update.model_dump_json())
-            if update.status in ("complete", "failed"):
-                done.set()
-        except Exception:
-            done.set()
-
-    mgr.subscribe(job_id, _on_update)
-    try:
-        # Send current state immediately so the client doesn't miss anything
-        current = ProgressUpdate(
-            job_id=job.id,
-            status=job.status,
-            progress_pct=job.progress_pct,
-            message=job.message,
-        )
-        await websocket.send_text(current.model_dump_json())
-
-        if job.status in ("complete", "failed"):
-            return
-
-        # Keep connection alive until job finishes or client disconnects
-        while not done.is_set():
-            try:
-                await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
-            except asyncio.TimeoutError:
-                continue
-            except WebSocketDisconnect:
-                break
-
-    finally:
-        mgr.unsubscribe(job_id, _on_update)
-        try:
-            await websocket.close()
-        except Exception:
-            pass
-
-
-# ---------------------------------------------------------------------------
 # V1 WebSocket — Redis pub/sub for Celery pipeline progress
+# NOTE: Must be registered BEFORE the wildcard /ws/{job_id} route below.
 # ---------------------------------------------------------------------------
 
 
@@ -169,3 +117,60 @@ async def assessment_progress_ws(websocket: WebSocket, assessment_id: str):
         except Exception:
             pass
         logger.info("WebSocket disconnected for assessment %s", assessment_id)
+
+
+# ---------------------------------------------------------------------------
+# Legacy MVP WebSocket (in-memory job manager)
+# ---------------------------------------------------------------------------
+
+
+@ws_router.websocket("/ws/{job_id}")
+async def job_progress_ws(websocket: WebSocket, job_id: str):
+    mgr = _mgr()
+    job = mgr.get(job_id)
+    if job is None:
+        await websocket.close(code=4004, reason="Job not found")
+        return
+
+    await websocket.accept()
+
+    done = asyncio.Event()
+
+    async def _on_update(update: ProgressUpdate) -> None:
+        try:
+            await websocket.send_text(update.model_dump_json())
+            if update.status in ("complete", "failed"):
+                done.set()
+        except Exception:
+            done.set()
+
+    mgr.subscribe(job_id, _on_update)
+    try:
+        # Send current state immediately so the client doesn't miss anything
+        current = ProgressUpdate(
+            job_id=job.id,
+            status=job.status,
+            progress_pct=job.progress_pct,
+            message=job.message,
+        )
+        await websocket.send_text(current.model_dump_json())
+
+        if job.status in ("complete", "failed"):
+            return
+
+        # Keep connection alive until job finishes or client disconnects
+        while not done.is_set():
+            try:
+                await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
+            except asyncio.TimeoutError:
+                continue
+            except WebSocketDisconnect:
+                break
+
+    finally:
+        mgr.unsubscribe(job_id, _on_update)
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+

@@ -6,10 +6,12 @@
 
 import type {
   CreateAssessmentRequest,
+  AssessmentCreateResponse,
   AssessmentResponse,
   AssessmentListResponse,
   DamageReport,
   DamageItem,
+  DamageListResponse,
   FrameInfo,
   HealthResponse,
 } from "./api-types";
@@ -32,13 +34,13 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 export async function createAssessment(
   data: CreateAssessmentRequest
-): Promise<AssessmentResponse> {
+): Promise<AssessmentCreateResponse> {
   const res = await fetch(url("/api/v1/assessments"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return handleResponse<AssessmentResponse>(res);
+  return handleResponse<AssessmentCreateResponse>(res);
 }
 
 export async function listAssessments(params?: {
@@ -51,7 +53,7 @@ export async function listAssessments(params?: {
   if (params?.page) searchParams.set("page", String(params.page));
   if (params?.page_size) searchParams.set("page_size", String(params.page_size));
   if (params?.status) searchParams.set("status", params.status);
-  if (params?.search) searchParams.set("search", params.search);
+  if (params?.search) searchParams.set("claim_number", params.search);
 
   const qs = searchParams.toString();
   const res = await fetch(url(`/api/v1/assessments${qs ? `?${qs}` : ""}`));
@@ -80,7 +82,7 @@ export async function uploadVideo(
   videoType: "exterior" | "interior",
   file: File,
   onProgress?: (pct: number) => void
-): Promise<AssessmentResponse> {
+): Promise<{ assessment_id: string; video_type: string; blob_path: string; status: string; message: string }> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url(`/api/v1/assessments/${assessmentId}/videos/${videoType}`));
@@ -127,7 +129,8 @@ export async function getDamageReport(assessmentId: string): Promise<DamageRepor
 
 export async function getDamageItems(assessmentId: string): Promise<DamageItem[]> {
   const res = await fetch(url(`/api/v1/assessments/${assessmentId}/damages`));
-  return handleResponse<DamageItem[]>(res);
+  const data = await handleResponse<DamageListResponse>(res);
+  return data.items;
 }
 
 export function getReportPdfUrl(assessmentId: string): string {
@@ -153,5 +156,5 @@ export async function getHealth(): Promise<HealthResponse> {
 export function getWebSocketUrl(assessmentId: string): string {
   const base = API_BASE || window.location.origin;
   const wsBase = base.replace(/^http/, "ws");
-  return `${wsBase}/ws/${assessmentId}`;
+  return `${wsBase}/ws/v1/assessments/${assessmentId}/status`;
 }

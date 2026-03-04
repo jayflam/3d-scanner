@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import * as GaussianSplats3D from "@mkkellogg/gaussian-splats-3d";
 
 interface SplatViewerProps {
+  /** API endpoint URL that returns JSON with a `url` field pointing to the .ply file */
   exteriorUrl?: string | null;
   interiorUrl?: string | null;
 }
@@ -14,16 +15,17 @@ export default function SplatViewer({ exteriorUrl, interiorUrl }: SplatViewerPro
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const currentUrl = activeView === "exterior" ? exteriorUrl : interiorUrl;
+  const currentApiUrl = activeView === "exterior" ? exteriorUrl : interiorUrl;
   const hasExterior = !!exteriorUrl;
   const hasInterior = !!interiorUrl;
 
   useEffect(() => {
-    if (!containerRef.current || !currentUrl) return;
+    if (!containerRef.current || !currentApiUrl) return;
 
     const container = containerRef.current;
     setIsLoading(true);
     setError(null);
+    let cancelled = false;
 
     // Clean up previous viewer
     if (viewerRef.current) {
@@ -33,32 +35,46 @@ export default function SplatViewer({ exteriorUrl, interiorUrl }: SplatViewerPro
         // Ignore cleanup errors
       }
       viewerRef.current = null;
-      // Clear the container so the new viewer can mount fresh
       container.innerHTML = "";
     }
 
-    const viewer = new GaussianSplats3D.Viewer({
-      cameraUp: [0, -1, 0],
-      initialCameraPosition: [0, 0, 5],
-      initialCameraLookAt: [0, 0, 0],
-      rootElement: container,
-      selfDrivenMode: true,
-    });
+    // First fetch the splat endpoint to get the actual .ply URL
+    async function loadSplat() {
+      try {
+        const res = await fetch(currentApiUrl!);
+        if (!res.ok) throw new Error(`Failed to fetch splat info: ${res.status}`);
+        const data = await res.json();
+        const splatFileUrl: string = data.url;
 
-    viewerRef.current = viewer;
+        if (cancelled) return;
 
-    viewer
-      .addSplatScene(currentUrl, { showLoadingUI: false })
-      .then(() => {
-        viewer.start();
-        setIsLoading(false);
-      })
-      .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "Failed to load splat");
-        setIsLoading(false);
-      });
+        const viewer = new GaussianSplats3D.Viewer({
+          cameraUp: [0, -1, 0],
+          initialCameraPosition: [0, 0, 5],
+          initialCameraLookAt: [0, 0, 0],
+          rootElement: container,
+          selfDrivenMode: true,
+        });
+
+        viewerRef.current = viewer;
+
+        await viewer.addSplatScene(splatFileUrl, { showLoadingUI: false });
+        if (!cancelled) {
+          viewer.start();
+          setIsLoading(false);
+        }
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load splat");
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadSplat();
 
     return () => {
+      cancelled = true;
       if (viewerRef.current) {
         try {
           viewerRef.current.dispose();
@@ -68,7 +84,7 @@ export default function SplatViewer({ exteriorUrl, interiorUrl }: SplatViewerPro
         viewerRef.current = null;
       }
     };
-  }, [currentUrl]);
+  }, [currentApiUrl]);
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return;

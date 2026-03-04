@@ -38,7 +38,7 @@ sys.modules.setdefault("rembg.sessions", fake_rembg.sessions)
 
 # Stub optional heavy deps that aren't used during testing
 for mod in ("torch", "trimesh", "trimesh.visual", "trimesh.visual.material",
-            "xatlas", "numpy", "einops"):
+            "xatlas", "einops"):
     sys.modules.setdefault(mod, MagicMock())
 
 # ── Now safe to import application code ────────────────────────────────────
@@ -46,7 +46,9 @@ for mod in ("torch", "trimesh", "trimesh.visual", "trimesh.visual.material",
 from fastapi.testclient import TestClient
 
 from app.config import settings
-from app.main import app, triposr_service, damage_service, job_manager
+from app.main import app
+# Legacy services are lazy-loaded in main.py lifespan; import them after app is created
+import app.main as main_module
 
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
@@ -70,24 +72,51 @@ def _stub_generate_glb(image, output_path, **kwargs) -> Path:
 
 
 @pytest.fixture(autouse=True)
-def _patch_triposr():
-    """Replace TripoSR's generate_glb with a fast stub."""
-    triposr_service._model = MagicMock()
-    triposr_service._rembg_session = MagicMock()
-    triposr_service._device = "cpu"
+def _setup_legacy_services():
+    """Initialize legacy services on main_module for testing.
 
-    with patch.object(triposr_service, "generate_glb", side_effect=_stub_generate_glb):
+    Sets module-level globals BEFORE the TestClient lifespan runs so the
+    lifespan's ``if triposr_service is None`` guard skips re-creation.
+    """
+    from app.services.triposr import TripoSRService
+    from app.services.damage import DamageAssessmentService
+    from app.services.job_manager import JobManager
+    from app.api.routes import init_routes, router as legacy_router
+    from app.api.websocket import init_ws
+
+    triposr_svc = TripoSRService()
+    damage_svc = DamageAssessmentService()
+    job_mgr = JobManager(triposr_svc, damage_svc)
+
+    main_module.triposr_service = triposr_svc
+    main_module.damage_service = damage_svc
+    main_module.job_manager = job_mgr
+
+    triposr_svc._model = MagicMock()
+    triposr_svc._rembg_session = MagicMock()
+    triposr_svc._device = "cpu"
+
+    damage_svc.load()
+    init_routes(job_mgr)
+    init_ws(job_mgr)
+
+    # Mount legacy routes on the app for testing
+    app.include_router(legacy_router)
+
+    with patch.object(triposr_svc, "generate_glb", side_effect=_stub_generate_glb):
         yield
+
+    # Clean up module globals so other test files aren't affected
+    main_module.triposr_service = None
+    main_module.damage_service = None
+    main_module.job_manager = None
 
 
 @pytest.fixture()
-def client():
+def client(_setup_legacy_services):
     """Provide a TestClient with lifespan events handled."""
-    # Skip model loading in lifespan since we've already stubbed everything
-    with patch.object(triposr_service, "load"):
-        with patch.object(damage_service, "load"):
-            with TestClient(app, raise_server_exceptions=False) as c:
-                yield c
+    with TestClient(app, raise_server_exceptions=False) as c:
+        yield c
 
 
 # ── Tests ──────────────────────────────────────────────────────────────────
@@ -224,12 +253,12 @@ class TestResultEdgeCases:
     def test_result_before_complete_returns_409(self, client: TestClient):
         """Requesting result for an in-progress job should return 409."""
         from app.services.job_manager import Job
-        job = job_manager.create_job(image_path=Path("/fake"))
+        job = main_module.job_manager.create_job(image_path=Path("/fake"))
         resp = client.get(f"/api/jobs/{job.id}/result")
         assert resp.status_code == 409
 
     def test_model_download_before_ready_returns_409(self, client: TestClient):
         from app.services.job_manager import Job
-        job = job_manager.create_job(image_path=Path("/fake"))
+        job = main_module.job_manager.create_job(image_path=Path("/fake"))
         resp = client.get(f"/api/jobs/{job.id}/model")
         assert resp.status_code == 409

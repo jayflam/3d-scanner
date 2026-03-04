@@ -57,6 +57,9 @@ def _build_pipeline_status(a: Assessment) -> PipelineStatus:
             exterior_video="complete" if a.exterior_video_blob_path else "failed",
             interior_video="complete" if a.interior_video_blob_path else "failed",
             frame_extraction="failed",
+            gaussian_splatting="failed",
+            damage_analysis="failed",
+            report_generation="failed",
         ),
     }
     return status_map.get(a.status, PipelineStatus())

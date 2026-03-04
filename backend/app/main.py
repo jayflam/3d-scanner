@@ -9,14 +9,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import init_routes, router
 from app.api.v1.router import api_router as v1_router
 from app.api.websocket import init_ws, ws_router
 from app.config import settings
 from app.services.blob_storage import blob_storage
-from app.services.damage import DamageAssessmentService
-from app.services.job_manager import JobManager
-from app.services.triposr import TripoSRService
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,34 +20,58 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-triposr_service = TripoSRService()
-damage_service = DamageAssessmentService()
-job_manager = JobManager(triposr_service, damage_service)
+# Legacy MVP services — lazy-loaded to avoid crashing if GPU deps are missing
+triposr_service = None
+damage_service = None
+job_manager = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global triposr_service, damage_service, job_manager
+
     logger.info("Starting up — initializing services …")
 
     # Initialize blob storage (Azure or local fallback)
     blob_storage.init()
 
     # Load legacy MVP services (TripoSR + single-image damage assessment)
-    try:
-        triposr_service.load(
-            model_id=settings.triposr_model_id,
-            device=settings.triposr_device,
-            chunk_size=settings.triposr_chunk_size,
-        )
-    except Exception as exc:
-        logger.warning("TripoSR not available: %s", exc)
+    # These require GPU/ML deps that may not be installed; skip gracefully.
+    # Skip if already initialized (e.g., by test fixtures).
+    if triposr_service is None:
+        try:
+            from app.services.triposr import TripoSRService
+            from app.services.damage import DamageAssessmentService
+            from app.services.job_manager import JobManager
+            from app.api.routes import init_routes, router as legacy_router
 
-    damage_service.load()
+            triposr_service = TripoSRService()
+            damage_service = DamageAssessmentService()
+            job_manager = JobManager(triposr_service, damage_service)
 
-    job_manager.set_loop(asyncio.get_event_loop())
+            try:
+                triposr_service.load(
+                    model_id=settings.triposr_model_id,
+                    device=settings.triposr_device,
+                    chunk_size=settings.triposr_chunk_size,
+                )
+            except Exception as exc:
+                logger.warning("TripoSR not available: %s", exc)
 
-    init_routes(job_manager)
-    init_ws(job_manager)
+            damage_service.load()
+            job_manager.set_loop(asyncio.get_event_loop())
+
+            init_routes(job_manager)
+            init_ws(job_manager)
+
+            # Mount legacy routes only if services loaded
+            app.include_router(legacy_router)
+        except Exception as exc:
+            logger.warning("Legacy MVP services not available (GPU deps missing): %s", exc)
+
+    # Always set the event loop on the job manager (even if pre-initialized by tests)
+    if job_manager is not None:
+        job_manager.set_loop(asyncio.get_event_loop())
 
     logger.info("Ready to accept requests")
     yield
@@ -77,8 +97,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Legacy MVP routes (single-image upload)
-app.include_router(router)
+# WebSocket routes (V1 + legacy)
 app.include_router(ws_router)
 
 # New v1 API routes (video-based pipeline)

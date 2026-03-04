@@ -55,8 +55,8 @@ export default function DamageCard({ item, id }: DamageCardProps) {
         <div>
           <span className="text-slate-500">Cost Estimate</span>
           <p className="text-slate-300 font-medium">
-            ${item.cost_estimate_low.toLocaleString()} &ndash; $
-            {item.cost_estimate_high.toLocaleString()}
+            ${item.estimated_cost_low.toLocaleString()} &ndash; $
+            {item.estimated_cost_high.toLocaleString()}
           </p>
         </div>
         <div>

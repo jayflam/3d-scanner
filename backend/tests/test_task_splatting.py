@@ -58,10 +58,12 @@ class TestRunSplattingTask:
         gs_instance.export_ply.side_effect = export_side_effect
         MockGS.return_value = gs_instance
 
-        # Mock the Celery task's request context
-        run_splatting_task.request.id = "celery-task-123"
+        # Call the raw function with an explicit mock self
+        mock_self = MagicMock()
+        mock_self.request.id = "celery-task-123"
 
-        result = run_splatting_task("test-id", "exterior")
+        fn = getattr(run_splatting_task, "__wrapped__", run_splatting_task)
+        result = fn(mock_self, "test-id", "exterior")
 
         assert result["splat_blob_path"] == "splats/test-id/exterior.ply"
         colmap_instance.run_sfm.assert_called_once()
@@ -87,10 +89,13 @@ class TestRunSplattingTask:
 
         mock_blob.download_blob.side_effect = FileNotFoundError("No frames")
 
-        run_splatting_task.request.id = "celery-task-456"
+        mock_self = MagicMock()
+        mock_self.request.id = "celery-task-456"
+
+        fn = getattr(run_splatting_task, "__wrapped__", run_splatting_task)
 
         with pytest.raises(RuntimeError, match="No frames found"):
-            run_splatting_task("test-id", "exterior")
+            fn(mock_self, "test-id", "exterior")
 
         mock_complete_job.assert_called_once()
         assert "No frames found" in mock_complete_job.call_args[1]["error"]

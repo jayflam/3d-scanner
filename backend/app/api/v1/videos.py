@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 from uuid import UUID
@@ -48,8 +49,11 @@ async def upload_video(
     # Update status
     assessment.status = AssessmentStatus.UPLOADING
 
-    # Upload to blob storage
-    blob_path = blob.upload_video(str(assessment_id), video_type, file.file)
+    # Upload to blob storage (run sync I/O in thread pool to avoid blocking event loop)
+    loop = asyncio.get_event_loop()
+    blob_path = await loop.run_in_executor(
+        None, blob.upload_video, str(assessment_id), video_type, file.file
+    )
 
     # Update assessment record
     if video_type == "exterior":
@@ -59,9 +63,9 @@ async def upload_video(
 
     logger.info("Video uploaded: %s for assessment %s", video_type, assessment_id)
 
-    # TODO: Trigger Celery frame extraction task here once pipeline teammate implements it
-    # from app.tasks.extract_frames import extract_frames_task
-    # extract_frames_task.delay(str(assessment_id), video_type)
+    # Trigger Celery pipeline
+    from app.tasks.pipeline import start_single_video_pipeline
+    start_single_video_pipeline(str(assessment_id), video_type)
 
     return {
         "assessment_id": str(assessment_id),

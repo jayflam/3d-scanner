@@ -65,15 +65,10 @@ export default function AssessmentDetailPage() {
   const interiorSplatUrl =
     assessment.splat_ready.interior ? getSplatUrl(assessment.id, "interior") : null;
 
-  // Build video URLs (convention: /api/v1/assessments/{id}/videos/{type})
-  const exteriorVideoUrl =
-    assessment.pipeline.exterior_video !== "pending"
-      ? `/api/v1/assessments/${assessment.id}/videos/exterior/stream`
-      : null;
-  const interiorVideoUrl =
-    assessment.pipeline.interior_video !== "pending"
-      ? `/api/v1/assessments/${assessment.id}/videos/interior/stream`
-      : null;
+  // Video URLs: use blob storage URL via splat-style endpoint
+  // Videos are not directly streamable yet — VideoPlayer hidden until backend supports streaming
+  const exteriorVideoUrl: string | null = null;
+  const interiorVideoUrl: string | null = null;
 
   return (
     <div className="space-y-6">
@@ -133,8 +128,8 @@ export default function AssessmentDetailPage() {
           />
 
           {/* Zone diagram */}
-          {damageReport && damageReport.items.length > 0 && (
-            <ZoneDiagram damages={damageReport.items} />
+          {damageReport && damageReport.damages.length > 0 && (
+            <ZoneDiagram damages={damageReport.damages} />
           )}
 
           {/* Frame counts */}

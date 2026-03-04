@@ -51,7 +51,7 @@ export default function StatusTracker({ pipeline, progressPct }: StatusTrackerPr
                   className={`text-xs font-medium ${
                     status === "complete"
                       ? "text-emerald-400"
-                      : status === "processing"
+                      : status === "in_progress"
                       ? "text-blue-400"
                       : status === "failed"
                       ? "text-red-400"
@@ -90,7 +90,7 @@ function StageIcon({ status }: { status: PipelineStageStatus }) {
           <CheckIcon className="w-4 h-4 text-emerald-400" />
         </div>
       );
-    case "processing":
+    case "in_progress":
       return (
         <div className={`${baseClasses} bg-blue-900/50 border border-blue-500`}>
           <div className="w-4 h-4 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />

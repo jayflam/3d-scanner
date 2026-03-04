@@ -9,7 +9,7 @@ import sys
 
 # Stub heavy deps so models can be imported without a real DB
 for mod in ("torch", "trimesh", "trimesh.visual", "trimesh.visual.material",
-            "xatlas", "numpy", "einops", "rembg", "rembg.sessions"):
+            "xatlas", "einops", "rembg", "rembg.sessions"):
     sys.modules.setdefault(mod, MagicMock())
 fake_tsr = MagicMock()
 sys.modules.setdefault("tsr", fake_tsr)

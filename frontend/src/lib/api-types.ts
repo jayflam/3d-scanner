@@ -29,7 +29,7 @@ export type VehicleZone =
   | "side_right"
   | "roof";
 
-export type PipelineStageStatus = "pending" | "processing" | "complete" | "failed";
+export type PipelineStageStatus = "pending" | "in_progress" | "complete" | "failed";
 
 // -- Request types -----------------------------------------------------------
 
@@ -80,6 +80,15 @@ export interface AssessmentResponse {
   error_message: string | null;
   created_at: string;
   updated_at: string;
+  completed_at: string | null;
+}
+
+export interface AssessmentCreateResponse {
+  id: string;
+  status: AssessmentStatus;
+  claim_number: string;
+  created_at: string;
+  upload_urls: Record<string, string>;
 }
 
 export interface AssessmentListResponse {
@@ -91,6 +100,7 @@ export interface AssessmentListResponse {
 
 export interface DamageItem {
   id: string;
+  assessment_id: string;
   damage_id: string;
   location: string;
   vehicle_zone: VehicleZone;
@@ -99,20 +109,37 @@ export interface DamageItem {
   description: string;
   affected_parts: string[];
   repair_method: RepairType;
-  cost_estimate_low: number;
-  cost_estimate_high: number;
+  estimated_cost_low: number;
+  estimated_cost_high: number;
   confidence_score: number;
   reference_frame_paths: string[];
+  created_at: string;
+}
+
+export interface ReportSummary {
+  total_damage_count: number;
+  total_estimate_low: number;
+  total_estimate_high: number;
+  recommendation: string;
+  narrative: string;
 }
 
 export interface DamageReport {
   assessment_id: string;
-  vehicle_description: string;
-  overall_severity: Severity;
-  total_cost_low: number;
-  total_cost_high: number;
+  vehicle: {
+    year: number;
+    make: string;
+    model: string;
+    vin: string;
+  };
+  damages: DamageItem[];
+  summary: ReportSummary;
+  generated_at: string;
+}
+
+export interface DamageListResponse {
   items: DamageItem[];
-  summary: string;
+  total: number;
 }
 
 export interface FrameInfo {
