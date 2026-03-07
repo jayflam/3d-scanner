@@ -45,11 +45,12 @@ class DamageItem(Base):
     damage_id: Mapped[str] = mapped_column(String(20), nullable=False)
     location: Mapped[str] = mapped_column(Text, nullable=False)
     vehicle_zone: Mapped[VehicleZone] = mapped_column(
-        Enum(VehicleZone, name="vehicle_zone"), nullable=False
+        Enum(VehicleZone, name="vehicle_zone", values_callable=lambda x: [e.value for e in x]), nullable=False
     )
     damage_type: Mapped[str] = mapped_column(String(100), nullable=False)
     severity: Mapped[DamageSeverity] = mapped_column(
-        Enum(DamageSeverity, name="damage_severity"), nullable=False
+        # Enum(DamageSeverity, name="damage_severity"), nullable=False
+        Enum(DamageSeverity, name="damage_severity", values_callable=lambda x: [e.value for e in x]), nullable=False
     )
     description: Mapped[str] = mapped_column(Text, nullable=False)
     affected_parts: Mapped[dict | list] = mapped_column(JSONB, default=list)

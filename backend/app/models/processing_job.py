@@ -37,10 +37,12 @@ class ProcessingJob(Base):
         UUID(as_uuid=True), ForeignKey("assessments.id", ondelete="CASCADE"), nullable=False
     )
     stage: Mapped[ProcessingStage] = mapped_column(
-        Enum(ProcessingStage, name="processing_stage"), nullable=False
+        #Enum(ProcessingStage, name="processing_stage"), nullable=False
+        Enum(ProcessingStage, name="processing_stage", values_callable=lambda x: [e.value for e in x]), nullable=False
     )
     status: Mapped[JobStatus] = mapped_column(
-        Enum(JobStatus, name="job_status"), default=JobStatus.QUEUED, nullable=False
+        #Enum(JobStatus, name="job_status"), default=JobStatus.QUEUED, nullable=False
+        Enum(JobStatus, name="job_status", values_callable=lambda x: [e.value for e in x]), default=JobStatus.QUEUED, nullable=False
     )
     celery_task_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

@@ -153,5 +153,5 @@ export async function getHealth(): Promise<HealthResponse> {
 export function getWebSocketUrl(assessmentId: string): string {
   const base = API_BASE || window.location.origin;
   const wsBase = base.replace(/^http/, "ws");
-  return `${wsBase}/ws/${assessmentId}`;
+  return `${wsBase}/ws/v1/assessments/${assessmentId}/status`;
 }

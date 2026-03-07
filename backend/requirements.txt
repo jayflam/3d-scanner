@@ -14,12 +14,13 @@ Pillow>=10.1.0
 einops>=0.7.0
 transformers>=4.35.0
 trimesh>=4.0.5
-rembg
+# rembg
+rembg[cpu]
 huggingface-hub
 imageio[ffmpeg]
-xatlas==0.0.9
+xatlas>=0.0.9
 moderngl>=5.10.0
-numpy<2
+numpy>=2.0
 
 # torchmcubes must be installed from git:
 #   pip install git+https://github.com/tatsy/torchmcubes.git

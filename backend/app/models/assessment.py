@@ -37,7 +37,7 @@ class Assessment(Base):
     vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False)
 
     status: Mapped[AssessmentStatus] = mapped_column(
-        Enum(AssessmentStatus, name="assessment_status"),
+        Enum(AssessmentStatus, name="assessment_status", values_callable=lambda x: [e.value for e in x]),
         default=AssessmentStatus.CREATED,
         nullable=False,
     )

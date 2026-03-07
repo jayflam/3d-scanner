@@ -7,6 +7,7 @@ from pathlib import Path
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -70,6 +71,41 @@ async def upload_video(
         "status": "uploaded",
         "message": f"{video_type} video uploaded successfully",
     }
+
+
+@router.get("/{video_type}/stream")
+async def stream_video(
+    assessment_id: UUID,
+    video_type: str,
+    db: AsyncSession = Depends(get_db),
+    blob: BlobStorageService = Depends(get_blob_storage),
+):
+    if video_type not in ALLOWED_VIDEO_TYPES:
+        raise HTTPException(400, f"video_type must be one of: {ALLOWED_VIDEO_TYPES}")
+
+    result = await db.execute(
+        select(Assessment).where(Assessment.id == assessment_id)
+    )
+    assessment = result.scalar_one_or_none()
+    if not assessment:
+        raise HTTPException(404, "Assessment not found")
+
+    blob_path = (
+        assessment.exterior_video_blob_path
+        if video_type == "exterior"
+        else assessment.interior_video_blob_path
+    )
+    if not blob_path:
+        raise HTTPException(404, f"No {video_type} video uploaded yet")
+
+    if blob.is_azure:
+        redirect_url = blob.get_blob_url(blob_path)
+        return RedirectResponse(url=redirect_url)
+
+    local_path = blob.get_local_path(blob_path)
+    if not local_path.exists():
+        raise HTTPException(404, "Video file not found on disk")
+    return FileResponse(str(local_path), media_type="video/mp4")
 
 
 @router.get("/{video_type}/status")
