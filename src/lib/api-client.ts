@@ -150,8 +150,19 @@ export async function getHealth(): Promise<HealthResponse> {
 
 // -- WebSocket URL -----------------------------------------------------------
 
+// export function getWebSocketUrl(assessmentId: string): string {
+//   const base = API_BASE || window.location.origin;
+//   const wsBase = base.replace(/^http/, "ws");
+//   return `${wsBase}/ws/v1/assessments/${assessmentId}/status`;
+// }
+
 export function getWebSocketUrl(assessmentId: string): string {
-  const base = API_BASE || window.location.origin;
-  const wsBase = base.replace(/^http/, "ws");
-  return `${wsBase}/ws/v1/assessments/${assessmentId}/status`;
+  const path = `/ws/v1/assessments/${assessmentId}/status`;
+  if (!API_BASE) {
+    // No explicit base URL — use current host so the Vite proxy (or nginx) handles the upgrade
+    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    return `${wsProtocol}//${window.location.host}${path}`;
+  }
+  const wsBase = API_BASE.replace(/^http/, "ws");
+  return `${wsBase}${path}`;
 }

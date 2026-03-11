@@ -34,8 +34,15 @@ async def upload_video(
     if video_type not in ALLOWED_VIDEO_TYPES:
         raise HTTPException(400, f"video_type must be one of: {ALLOWED_VIDEO_TYPES}")
 
-    # Validate content type
-    if file.content_type and not file.content_type.startswith("video/"):
+    # # Validate content type
+    # if file.content_type and not file.content_type.startswith("video/"):
+    #     raise HTTPException(400, "File must be a video")
+
+    # Validate content type — allow video/* MIME types or known video extensions
+    ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v", ".3gp"}
+    has_video_content_type = file.content_type and file.content_type.startswith("video/")
+    has_video_extension = file.filename and Path(file.filename).suffix.lower() in ALLOWED_VIDEO_EXTENSIONS
+    if not has_video_content_type and not has_video_extension:
         raise HTTPException(400, "File must be a video")
 
     # Look up assessment
@@ -60,9 +67,25 @@ async def upload_video(
 
     logger.info("Video uploaded: %s for assessment %s", video_type, assessment_id)
 
-    # TODO: Trigger Celery frame extraction task here once pipeline teammate implements it
-    # from app.tasks.extract_frames import extract_frames_task
-    # extract_frames_task.delay(str(assessment_id), video_type)
+    has_exterior = assessment.exterior_video_blob_path is not None
+    has_interior = assessment.interior_video_blob_path is not None
+
+    # Start the pipeline as soon as the exterior video is uploaded.
+    # Interior video is optional and will be used if present.
+    should_start = has_exterior and video_type == "exterior"
+
+    if should_start:
+        from app.tasks.pipeline import start_pipeline  # noqa: PLC0415
+
+        try:
+            task_id = start_pipeline(
+                str(assessment_id),
+                has_exterior=has_exterior,
+                has_interior=has_interior,
+            )
+            logger.info("Pipeline started for assessment %s (task_id=%s)", assessment_id, task_id)
+        except Exception:
+            logger.exception("Failed to start pipeline for assessment %s", assessment_id)
 
     return {
         "assessment_id": str(assessment_id),

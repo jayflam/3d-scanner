@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/test_e2e_pipeline.py -v)",
+      "Bash(docker compose:*)"
+    ]
+  }
+}

@@ -133,8 +133,8 @@ export default function AssessmentDetailPage() {
           />
 
           {/* Zone diagram */}
-          {damageReport && damageReport.items.length > 0 && (
-            <ZoneDiagram damages={damageReport.items} />
+          {damageReport && damageReport.damages.length > 0 && (
+            <ZoneDiagram damages={damageReport.damages} />
           )}
 
           {/* Frame counts */}

@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import init_routes, router
 from app.api.v1.router import api_router as v1_router
@@ -83,3 +84,8 @@ app.include_router(ws_router)
 
 # New v1 API routes (video-based pipeline)
 app.include_router(v1_router)
+
+# Serve local blob storage files (dev fallback when Azure not configured)
+_blob_dir = settings.output_dir / "blob"
+_blob_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/blob", StaticFiles(directory=str(_blob_dir)), name="blob")

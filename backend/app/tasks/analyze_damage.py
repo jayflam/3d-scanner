@@ -238,21 +238,21 @@ def analyze_damage_task(
                 "Downloading frames for analysis...",
             )
 
+            (tmpdir / "exterior").mkdir(parents=True, exist_ok=True)
             exterior_frames = _download_frames(
                 assessment_id, "exterior",
                 info["exterior_frame_count"],
                 tmpdir / "exterior",
                 sample_every=3,
             )
-            (tmpdir / "exterior").mkdir(parents=True, exist_ok=True)
 
+            (tmpdir / "interior").mkdir(parents=True, exist_ok=True)
             interior_frames = _download_frames(
                 assessment_id, "interior",
                 info["interior_frame_count"],
                 tmpdir / "interior",
                 sample_every=3,
             )
-            (tmpdir / "interior").mkdir(parents=True, exist_ok=True)
 
             # 2. Run analyzer (async service called from sync context)
             _publish_progress(

@@ -43,6 +43,13 @@ services:
         condition: service_healthy
     volumes:
       - blob_data:/app/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     command: >
       sh -c "
         python -m alembic upgrade head &&
@@ -63,6 +70,13 @@ services:
         condition: service_healthy
     volumes:
       - blob_data:/app/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=2
 
 volumes:

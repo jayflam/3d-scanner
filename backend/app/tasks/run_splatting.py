@@ -236,14 +236,16 @@ def run_splatting_task(
             }
 
     except Exception as exc:
-        logger.exception(
-            "Splatting failed for %s/%s", assessment_id, video_type
+        logger.warning(
+            "Splatting failed for %s/%s (non-fatal, pipeline continues): %s",
+            assessment_id, video_type, exc,
         )
         _complete_processing_job(job_id, error=str(exc))
-        _update_db(
-            assessment_id,
-            status="failed",
-            error_message=f"Splatting failed: {exc}",
-            updated_at=datetime.now(timezone.utc),
-        )
-        raise
+        # Do NOT mark the assessment as failed or re-raise — splatting is optional.
+        # Damage analysis and report generation can still complete without the splat.
+        return {
+            "assessment_id": assessment_id,
+            "video_type": video_type,
+            "splat_blob_path": None,
+            "error": str(exc),
+        }

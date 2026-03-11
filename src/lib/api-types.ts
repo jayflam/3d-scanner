@@ -16,7 +16,6 @@ export type AssessmentStatus =
   | "failed";
 
 export type Severity = "minor" | "moderate" | "severe";
-export type RepairType = "repair" | "replace" | "repaint";
 
 export type VehicleZone =
   | "front_left"
@@ -27,9 +26,11 @@ export type VehicleZone =
   | "rear_center"
   | "side_left"
   | "side_right"
-  | "roof";
+  | "roof"
+  | "interior_front"
+  | "interior_rear";
 
-export type PipelineStageStatus = "pending" | "processing" | "complete" | "failed";
+export type PipelineStageStatus = "pending" | "in_progress" | "complete" | "failed";
 
 // -- Request types -----------------------------------------------------------
 
@@ -89,8 +90,10 @@ export interface AssessmentListResponse {
   page_size: number;
 }
 
+/** Mirrors backend DamageItemResponse schema */
 export interface DamageItem {
   id: string;
+  assessment_id: string;
   damage_id: string;
   location: string;
   vehicle_zone: VehicleZone;
@@ -98,21 +101,36 @@ export interface DamageItem {
   severity: Severity;
   description: string;
   affected_parts: string[];
-  repair_method: RepairType;
-  cost_estimate_low: number;
-  cost_estimate_high: number;
+  repair_method: string;
+  estimated_cost_low: number;
+  estimated_cost_high: number;
   confidence_score: number;
   reference_frame_paths: string[];
+  created_at: string;
 }
 
+export interface ReportSummary {
+  total_damage_count: number;
+  total_estimate_low: number;
+  total_estimate_high: number;
+  recommendation: string;
+  narrative: string;
+}
+
+export interface VehicleInfoReport {
+  year: number;
+  make: string;
+  model: string;
+  vin: string;
+}
+
+/** Mirrors backend ReportResponse schema from GET /api/v1/assessments/{id}/report */
 export interface DamageReport {
   assessment_id: string;
-  vehicle_description: string;
-  overall_severity: Severity;
-  total_cost_low: number;
-  total_cost_high: number;
-  items: DamageItem[];
-  summary: string;
+  vehicle: VehicleInfoReport;
+  damages: DamageItem[];
+  summary: ReportSummary;
+  generated_at: string;
 }
 
 export interface FrameInfo {
@@ -122,18 +140,20 @@ export interface FrameInfo {
   frame_number: number;
 }
 
-/** Sent over the WebSocket connection at /ws/{assessmentId} */
+/** Sent over the WebSocket connection at /ws/v1/assessments/{id}/status */
 export interface ProgressUpdate {
   assessment_id: string;
-  status: AssessmentStatus;
   stage: string;
   progress_pct: number;
   message: string;
+  timestamp: string;
 }
 
 export interface HealthResponse {
-  status: "ok" | "degraded" | "error";
-  database: boolean;
-  redis: boolean;
-  gpu_available: boolean;
+  status: "ok" | "degraded";
+  checks: {
+    api: string;
+    database: string;
+    redis: string;
+  };
 }

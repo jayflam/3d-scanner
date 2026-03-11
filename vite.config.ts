@@ -8,6 +8,12 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
+    hmr: {
+      // Use a separate port for HMR WebSocket so Vite's upgrade handler
+      // doesn't swallow all WebSocket upgrade events before the /ws proxy
+      // can forward them to the backend.
+      port: 5174,
+    },
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8000',
@@ -16,6 +22,7 @@ export default defineConfig({
       '/ws': {
         target: 'ws://127.0.0.1:8000',
         ws: true,
+        changeOrigin: true,
       },
     },
   },

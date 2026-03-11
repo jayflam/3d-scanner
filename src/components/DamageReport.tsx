@@ -43,7 +43,9 @@ export default function DamageReport({
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold text-slate-200">Damage Report</h3>
-            <p className="text-sm text-slate-400">{report.vehicle_description}</p>
+            <p className="text-sm text-slate-400">
+              {report.vehicle.year} {report.vehicle.make} {report.vehicle.model}
+            </p>
           </div>
           <a
             href={getReportPdfUrl(assessmentId)}
@@ -57,23 +59,24 @@ export default function DamageReport({
         </div>
 
         {/* Summary */}
-        <p className="text-sm text-slate-300 mb-4">{report.summary}</p>
+        <p className="text-sm text-slate-300 mb-4">{report.summary.narrative}</p>
 
         {/* Cost totals */}
         <div className="bg-slate-800 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-400">Total Estimated Cost</span>
             <span className="text-xl font-bold text-slate-100">
-              ${report.total_cost_low.toLocaleString()} &ndash; $
-              {report.total_cost_high.toLocaleString()}
+              ${report.summary.total_estimate_low.toLocaleString()} &ndash; $
+              {report.summary.total_estimate_high.toLocaleString()}
             </span>
           </div>
+          <p className="text-xs text-slate-400 mt-2">{report.summary.recommendation}</p>
         </div>
       </div>
 
       {/* Damage items */}
       <div className="space-y-3">
-        {report.items.map((item) => (
+        {report.damages.map((item) => (
           <DamageCard
             key={item.id}
             item={item}
@@ -83,8 +86,8 @@ export default function DamageReport({
       </div>
 
       {/* Cost breakdown table */}
-      {report.items.length > 0 && (
-        <CostBreakdownTable items={report.items} report={report} />
+      {report.damages.length > 0 && (
+        <CostBreakdownTable items={report.damages} report={report} />
       )}
     </div>
   );
@@ -95,7 +98,7 @@ function CostBreakdownTable({
   report,
 }: {
   items: DamageItem[];
-  report: DamageReportType;
+  report: { summary: { total_estimate_low: number; total_estimate_high: number } };
 }) {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
@@ -157,10 +160,10 @@ function CostBreakdownTable({
               Total
             </td>
             <td className="px-4 py-2 text-right text-slate-200">
-              ${report.total_cost_low.toLocaleString()}
+              ${report.summary.total_estimate_low.toLocaleString()}
             </td>
             <td className="px-4 py-2 text-right text-slate-200">
-              ${report.total_cost_high.toLocaleString()}
+              ${report.summary.total_estimate_high.toLocaleString()}
             </td>
           </tr>
         </tfoot>

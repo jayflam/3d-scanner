@@ -14,8 +14,7 @@ Pillow>=10.1.0
 einops>=0.7.0
 transformers>=4.35.0
 trimesh>=4.0.5
-# rembg
-rembg[cpu]
+rembg[gpu]
 huggingface-hub
 imageio[ffmpeg]
 xatlas>=0.0.9
@@ -28,6 +27,7 @@ numpy>=2.0
 # Database
 sqlalchemy[asyncio]>=2.0.25
 asyncpg>=0.29.0
+psycopg2-binary>=2.9.9
 alembic>=1.13.0
 
 # Task queue

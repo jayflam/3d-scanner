@@ -110,8 +110,16 @@ class BlobStorageService:
 
     def download_blob(self, blob_path: str) -> bytes:
         if self._container_client is not None:
-            blob_client = self._container_client.get_blob_client(blob_path)
-            return blob_client.download_blob().readall()
+            try:
+                blob_client = self._container_client.get_blob_client(blob_path)
+                return blob_client.download_blob().readall()
+            except Exception as exc:
+                # Normalize Azure ResourceNotFoundError to FileNotFoundError so callers
+                # can use a single exception type regardless of storage backend.
+                err_code = getattr(exc, "error_code", None)
+                if err_code == "BlobNotFound" or "BlobNotFound" in str(exc):
+                    raise FileNotFoundError(f"Blob not found: {blob_path}") from exc
+                raise
 
         local_path = self._local_root / blob_path
         if not local_path.exists():

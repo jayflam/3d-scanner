@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from celery import Celery
+from celery.signals import worker_init
 
 from app.config import settings
 
@@ -20,7 +21,18 @@ celery.conf.update(
     worker_hijack_root_logger=False,
     task_acks_late=True,
     worker_prefetch_multiplier=1,
+    include=[
+        "app.tasks.extract_frames",
+        "app.tasks.run_splatting",
+        "app.tasks.analyze_damage",
+        "app.tasks.generate_report",
+        "app.tasks.pipeline",
+    ],
 )
 
-# Auto-discover tasks in the tasks package
-celery.autodiscover_tasks(["app.tasks"])
+
+@worker_init.connect
+def init_blob_storage(**kwargs):
+    """Initialize blob storage when the Celery worker starts."""
+    from app.services.blob_storage import blob_storage
+    blob_storage.init()
