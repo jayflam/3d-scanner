@@ -295,7 +295,18 @@ def analyze_damage_task(
             finally:
                 loop.close()
 
-            # 3. Merge reports
+            # 3. Resolve reference frames to blob paths before merging
+            for d in exterior_report.damages:
+                d.reference_frames = [
+                    f"frames/{assessment_id}/exterior/{name}"
+                    for name in d.reference_frames
+                ]
+            for d in interior_report.damages:
+                d.reference_frames = [
+                    f"frames/{assessment_id}/interior/{name}"
+                    for name in d.reference_frames
+                ]
+
             _publish_progress(
                 assessment_id, "analysis", 85,
                 "Storing damage items...",

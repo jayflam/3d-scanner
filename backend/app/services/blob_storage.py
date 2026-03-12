@@ -130,6 +130,30 @@ class BlobStorageService:
         """For local fallback, return the filesystem path."""
         return self._local_root / blob_path
 
+    def delete_assessment_blobs(self, assessment_id: str) -> None:
+        """Delete all blobs belonging to an assessment (videos, frames, splats, report)."""
+        prefixes = [
+            f"videos/{assessment_id}/",
+            f"frames/{assessment_id}/",
+            f"splats/{assessment_id}/",
+            f"reports/{assessment_id}/",
+        ]
+        if self._container_client is not None:
+            for prefix in prefixes:
+                blobs = [
+                    b.name
+                    for b in self._container_client.list_blobs(name_starts_with=prefix)
+                ]
+                if blobs:
+                    self._container_client.delete_blobs(*blobs)
+                    logger.info("Deleted %d Azure blobs under %s", len(blobs), prefix)
+        else:
+            for prefix in prefixes:
+                local_dir = self._local_root / prefix
+                if local_dir.exists():
+                    shutil.rmtree(local_dir)
+                    logger.info("Deleted local blob directory: %s", local_dir)
+
     # ── Internal helpers ──────────────────────────────────────────────
 
     def _upload(self, blob_path: str, stream: BinaryIO) -> None:

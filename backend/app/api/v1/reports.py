@@ -25,6 +25,7 @@ router = APIRouter(prefix="/assessments/{assessment_id}", tags=["reports"])
 async def get_report(
     assessment_id: UUID,
     db: AsyncSession = Depends(get_db),
+    blob: BlobStorageService = Depends(get_blob_storage),
 ):
     result = await db.execute(
         select(Assessment)
@@ -50,7 +51,9 @@ async def get_report(
             estimated_cost_low=float(d.estimated_cost_low),
             estimated_cost_high=float(d.estimated_cost_high),
             confidence_score=float(d.confidence_score),
-            reference_frame_paths=d.reference_frame_paths or [],
+            reference_frame_paths=[
+                blob.get_blob_url(p) for p in (d.reference_frame_paths or [])
+            ],
             created_at=d.created_at,
         )
         for d in assessment.damage_items

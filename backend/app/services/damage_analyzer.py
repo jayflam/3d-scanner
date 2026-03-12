@@ -333,8 +333,10 @@ class DamageAnalyzerService:
             },
         ]
 
+        frame_names = [f.name for f in frames]
         for frame_path in frames:
             b64 = _encode_frame(frame_path)
+            content.append({"type": "text", "text": f"[{frame_path.name}]"})
             content.append(
                 {
                     "type": "image_url",
@@ -357,7 +359,10 @@ class DamageAnalyzerService:
             )
 
             raw = response.choices[0].message.content or ""
-            return _parse_json_response(raw)
+            result = _parse_json_response(raw)
+            if result:
+                result = _resolve_reference_frames(result, frame_names)
+            return result
 
         except Exception:
             logger.exception("GPT-4o analysis failed for zone %s", zone_hint.value)
@@ -380,6 +385,44 @@ class DamageAnalyzerService:
 def _encode_frame(frame_path: Path) -> str:
     """Read and base64-encode a JPEG frame."""
     return base64.b64encode(frame_path.read_bytes()).decode()
+
+
+def _resolve_reference_frames(result: dict[str, Any], frame_names: list[str]) -> dict[str, Any]:
+    """Replace GPT's arbitrary reference labels with the actual frame filenames.
+
+    GPT may return numeric indices ("1", "2"), prefixed labels ("image_1"), or
+    actual filenames. We map all of those to real filenames from the batch so
+    they can later be converted to blob paths.
+    """
+    for damage in result.get("damages", []):
+        resolved: list[str] = []
+        for ref in damage.get("reference_frames", []):
+            ref_str = str(ref).strip()
+            # Exact match (GPT returned the filename we labelled it with)
+            if ref_str in frame_names:
+                resolved.append(ref_str)
+                continue
+            # Numeric 1-based index ("1", "2", …)
+            try:
+                idx = int(ref_str) - 1
+                if 0 <= idx < len(frame_names):
+                    resolved.append(frame_names[idx])
+                    continue
+            except (ValueError, TypeError):
+                pass
+            # Prefixed index like "image_1", "image1", "frame_1"
+            for prefix in ("image_", "image", "frame_", "frame"):
+                if ref_str.lower().startswith(prefix):
+                    try:
+                        idx = int(ref_str[len(prefix):].lstrip("_")) - 1
+                        if 0 <= idx < len(frame_names):
+                            resolved.append(frame_names[idx])
+                            break
+                    except (ValueError, TypeError):
+                        pass
+        # Fall back to first two frames in the batch if GPT gave nothing usable
+        damage["reference_frames"] = resolved or frame_names[:2]
+    return result
 
 
 def _parse_json_response(raw: str) -> dict[str, Any] | None:

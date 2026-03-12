@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
-import { listAssessments } from "../lib/api-client";
-import type { AssessmentStatus } from "../lib/api-types";
+import { listAssessments, deleteAssessment } from "../lib/api-client";
 import StatusBadge from "../components/StatusBadge";
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
@@ -18,9 +17,12 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
 
 export default function AssessmentListPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["assessments", { page, search, status: statusFilter }],
@@ -106,26 +108,27 @@ export default function AssessmentListPage() {
               <th className="text-right px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
                 Estimate
               </th>
+              <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800">
             {isLoading && (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
                   <LoadingSpinner />
                 </td>
               </tr>
             )}
             {error && (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-red-400">
+                <td colSpan={6} className="px-6 py-12 text-center text-red-400">
                   Failed to load assessments. Is the backend running?
                 </td>
               </tr>
             )}
             {!isLoading && !error && assessments.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
                   No assessments found. Create your first one!
                 </td>
               </tr>
@@ -158,6 +161,15 @@ export default function AssessmentListPage() {
                     ? `$${a.total_estimate_low.toLocaleString()} - $${a.total_estimate_high.toLocaleString()}`
                     : "--"}
                 </td>
+                <td className="px-4 py-4">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(a.id); }}
+                    className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
+                    title="Delete assessment"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -188,6 +200,47 @@ export default function AssessmentListPage() {
           </div>
         </div>
       )}
+      {/* Delete confirmation dialog */}
+      {confirmDeleteId && (() => {
+        const target = assessments.find((a) => a.id === confirmDeleteId);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+              <h3 className="text-base font-semibold text-slate-100 mb-2">Delete Assessment</h3>
+              <p className="text-sm text-slate-400 mb-4">
+                Permanently delete{" "}
+                <span className="text-slate-200 font-medium">{target?.claim_number}</span>
+                {" "}and all associated videos, frames, splats, and damage data? This cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setConfirmDeleteId(null)}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-sm text-slate-300 hover:text-slate-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    setIsDeleting(true);
+                    try {
+                      await deleteAssessment(confirmDeleteId);
+                      queryClient.invalidateQueries({ queryKey: ["assessments"] });
+                      setConfirmDeleteId(null);
+                    } finally {
+                      setIsDeleting(false);
+                    }
+                  }}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-sm font-medium bg-red-700 hover:bg-red-600 text-white rounded-lg disabled:opacity-50 transition-colors"
+                >
+                  {isDeleting ? "Deleting…" : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -206,6 +259,14 @@ function SearchIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
     </svg>
   );
 }

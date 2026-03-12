@@ -8,8 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db
+from app.api.deps import get_blob_storage, get_db
 from app.models.assessment import Assessment, AssessmentStatus
+from app.services.blob_storage import BlobStorageService
 from app.schemas.assessment import (
     AssessmentCreateResponse,
     AssessmentListResponse,
@@ -172,6 +173,7 @@ async def get_assessment(
 async def delete_assessment(
     assessment_id: UUID,
     db: AsyncSession = Depends(get_db),
+    blob: BlobStorageService = Depends(get_blob_storage),
 ):
     result = await db.execute(
         select(Assessment).where(Assessment.id == assessment_id)
@@ -180,4 +182,15 @@ async def delete_assessment(
     if not assessment:
         raise HTTPException(404, "Assessment not found")
 
+    # Delete all blobs first (videos, frames, splats, report)
+    try:
+        blob.delete_assessment_blobs(str(assessment_id))
+    except Exception:
+        import logging
+        logging.getLogger(__name__).warning(
+            "Failed to delete blobs for assessment %s", assessment_id, exc_info=True
+        )
+
+    # Cascade deletes damage_items and processing_jobs via ORM relationship
     await db.delete(assessment)
+    await db.commit()

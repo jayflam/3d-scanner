@@ -146,10 +146,10 @@ function CostBreakdownTable({
                 {item.repair_method}
               </td>
               <td className="px-4 py-2 text-right text-slate-300">
-                ${item.cost_estimate_low.toLocaleString()}
+                ${item.estimated_cost_low.toLocaleString()}
               </td>
               <td className="px-4 py-2 text-right text-slate-300">
-                ${item.cost_estimate_high.toLocaleString()}
+                ${item.estimated_cost_high.toLocaleString()}
               </td>
             </tr>
           ))}

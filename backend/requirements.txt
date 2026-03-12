@@ -42,10 +42,13 @@ azure-identity>=1.15.0
 ffmpeg-python>=0.2.0
 
 # PDF generation
-weasyprint>=61.0
+weasyprint==60.2
+tinycss2==1.2.1
+pydyf==0.8.0
 
 # Gaussian Splatting dependencies
-# gsplat and nerfstudio installed separately (GPU machine)
+# nerfstudio (ns-train, ns-export, splatfacto) installed in Dockerfile after torch
+# colmap installed via apt in Dockerfile
 
 # Testing
 pytest>=7.0.0
