@@ -46,6 +46,8 @@ class Assessment(Base):
     interior_video_blob_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     exterior_splat_blob_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     interior_splat_blob_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    exterior_model_blob_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    interior_model_blob_path: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     exterior_frame_count: Mapped[int] = mapped_column(Integer, default=0)
     interior_frame_count: Mapped[int] = mapped_column(Integer, default=0)

@@ -44,6 +44,7 @@ class AssessmentResponse(BaseModel):
     pipeline: PipelineStatus
     frame_count: dict[str, int]
     splat_ready: dict[str, bool]
+    model_ready: dict[str, bool]
     total_estimate_low: float | None = None
     total_estimate_high: float | None = None
     error_message: str | None = None

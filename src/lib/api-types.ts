@@ -76,6 +76,10 @@ export interface AssessmentResponse {
     exterior: boolean;
     interior: boolean;
   };
+  model_ready: {
+    exterior: boolean;
+    interior: boolean;
+  };
   total_estimate_low: number | null;
   total_estimate_high: number | null;
   error_message: string | null;
@@ -138,6 +142,20 @@ export interface FrameInfo {
   url: string;
   video_type: "exterior" | "interior";
   frame_number: number;
+}
+
+export interface SplatInfo {
+  assessment_id: string;
+  splat_type: "exterior" | "interior";
+  url: string;
+  blob_path: string;
+}
+
+export interface ModelInfo {
+  assessment_id: string;
+  model_type: "exterior" | "interior";
+  url: string;
+  blob_path: string;
 }
 
 /** Sent over the WebSocket connection at /ws/v1/assessments/{id}/status */

@@ -77,6 +77,10 @@ def _to_response(a: Assessment) -> AssessmentResponse:
             "exterior": a.exterior_splat_blob_path is not None,
             "interior": a.interior_splat_blob_path is not None,
         },
+        model_ready={
+            "exterior": a.exterior_model_blob_path is not None,
+            "interior": a.interior_model_blob_path is not None,
+        },
         total_estimate_low=float(a.total_estimate_low) if a.total_estimate_low else None,
         total_estimate_high=float(a.total_estimate_high) if a.total_estimate_high else None,
         error_message=a.error_message,

@@ -9,7 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
-from app.api.v1 import assessments, reports, splats, videos
+from app.api.v1 import assessments, models, reports, splats, videos
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -20,6 +20,7 @@ api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(assessments.router)
 api_router.include_router(videos.router)
 api_router.include_router(splats.router)
+api_router.include_router(models.router)
 api_router.include_router(reports.router)
 
 

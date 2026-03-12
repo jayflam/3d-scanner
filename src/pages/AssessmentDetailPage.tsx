@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getAssessment, getDamageReport, getSplatUrl, deleteAssessment } from "../lib/api-client";
+import {
+  getAssessment,
+  getDamageReport,
+  getSplat,
+  getModel,
+  deleteAssessment,
+} from "../lib/api-client";
 import StatusTracker from "../components/StatusTracker";
 import SplatViewer from "../components/SplatViewer";
 import DamageReportPanel from "../components/DamageReport";
@@ -9,6 +15,7 @@ import VideoPlayer from "../components/VideoPlayer";
 import StatusBadge from "../components/StatusBadge";
 import ZoneDiagram from "../components/ZoneDiagram";
 import useJobProgress from "../hooks/useJobProgress";
+import ArModelViewer from "../components/ArModelViewer";
 
 export default function AssessmentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -66,10 +73,35 @@ export default function AssessmentDetailPage() {
     );
   }
 
-  const exteriorSplatUrl =
-    assessment.splat_ready.exterior ? getSplatUrl(assessment.id, "exterior") : null;
-  const interiorSplatUrl =
-    assessment.splat_ready.interior ? getSplatUrl(assessment.id, "interior") : null;
+  const {
+    data: exteriorSplat,
+  } = useQuery({
+    queryKey: ["splat", id, "exterior"],
+    queryFn: () => getSplat(id!, "exterior"),
+    enabled: !!id && assessment.splat_ready.exterior,
+  });
+
+  const {
+    data: interiorSplat,
+  } = useQuery({
+    queryKey: ["splat", id, "interior"],
+    queryFn: () => getSplat(id!, "interior"),
+    enabled: !!id && assessment.splat_ready.interior,
+  });
+
+  const exteriorSplatUrl = exteriorSplat?.url ?? null;
+  const interiorSplatUrl = interiorSplat?.url ?? null;
+
+  const {
+    data: exteriorModel,
+  } = useQuery({
+    queryKey: ["model", id, "exterior"],
+    queryFn: () => getModel(id!, "exterior"),
+    enabled: !!id && assessment.model_ready.exterior,
+  });
+
+  const exteriorModelUrl = exteriorModel?.url ?? null;
+  const hasExteriorModel = assessment.model_ready.exterior && !!exteriorModelUrl;
 
   // Build video URLs (convention: /api/v1/assessments/{id}/videos/{type})
   const exteriorVideoUrl =
@@ -89,6 +121,11 @@ export default function AssessmentDetailPage() {
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-2xl font-bold">{assessment.claim_number}</h1>
             <StatusBadge status={assessment.status} />
+            {hasExteriorModel && (
+              <span className="inline-flex items-center rounded-full bg-emerald-900/40 px-2 py-0.5 text-xs font-medium text-emerald-300 border border-emerald-700/60">
+                AR ready
+              </span>
+            )}
           </div>
           <p className="text-slate-400 text-sm">
             {assessment.vehicle.year} {assessment.vehicle.make}{" "}
@@ -189,6 +226,7 @@ export default function AssessmentDetailPage() {
             exteriorUrl={exteriorSplatUrl}
             interiorUrl={interiorSplatUrl}
           />
+          {hasExteriorModel && <ArModelViewer modelUrl={exteriorModelUrl} />}
           <VideoPlayer
             exteriorUrl={exteriorVideoUrl}
             interiorUrl={interiorVideoUrl}

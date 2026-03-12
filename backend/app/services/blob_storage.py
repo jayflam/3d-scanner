@@ -80,6 +80,14 @@ class BlobStorageService:
             self._upload(blob_path, f)
         return blob_path
 
+    def upload_model(
+        self, assessment_id: str, model_type: str, file_path: str | Path
+    ) -> str:
+        blob_path = f"models/{assessment_id}/{model_type}.glb"
+        with open(file_path, "rb") as f:
+            self._upload(blob_path, f)
+        return blob_path
+
     def upload_report(
         self, assessment_id: str, report_bytes: bytes, fmt: str = "pdf"
     ) -> str:
@@ -136,6 +144,7 @@ class BlobStorageService:
             f"videos/{assessment_id}/",
             f"frames/{assessment_id}/",
             f"splats/{assessment_id}/",
+            f"models/{assessment_id}/",
             f"reports/{assessment_id}/",
         ]
         if self._container_client is not None:

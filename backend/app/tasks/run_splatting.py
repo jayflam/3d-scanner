@@ -214,12 +214,48 @@ def run_splatting_task(
                 assessment_id, video_type, exported
             )
 
-            # 7. Update DB
+            # 7. Optionally export GLB for AR/web viewers
+            model_blob_path: str | None = None
+            try:
+                _publish_progress(
+                    assessment_id,
+                    "splatting",
+                    97,
+                    "Generating web AR model (GLB)...",
+                )
+                try:
+                    import trimesh  # type: ignore[import]
+                except ImportError:
+                    trimesh = None  # type: ignore[assignment]
+
+                if trimesh is not None:
+                    glb_path = tmpdir / f"{video_type}.glb"
+                    mesh = trimesh.load(exported, process=False)  # type: ignore[call-arg]
+                    mesh.export(glb_path)  # type: ignore[call-arg]
+                    model_blob_path = blob_storage.upload_model(
+                        assessment_id, video_type, glb_path
+                    )
+            except Exception:
+                logger.debug(
+                    "Failed to generate GLB model for %s/%s (non-fatal)",
+                    assessment_id,
+                    video_type,
+                    exc_info=True,
+                )
+
+            # 8. Update DB
             splat_field = f"{video_type}_splat_blob_path"
+            model_field = f"{video_type}_model_blob_path"
+            update_values = {
+                splat_field: splat_blob_path,
+                "updated_at": datetime.now(timezone.utc),
+            }
+            if model_blob_path is not None:
+                update_values[model_field] = model_blob_path
+
             _update_db(
                 assessment_id,
-                **{splat_field: splat_blob_path},
-                updated_at=datetime.now(timezone.utc),
+                **update_values,
             )
 
             _publish_progress(
@@ -233,6 +269,7 @@ def run_splatting_task(
                 "assessment_id": assessment_id,
                 "video_type": video_type,
                 "splat_blob_path": splat_blob_path,
+                "model_blob_path": model_blob_path,
             }
 
     except Exception as exc:

@@ -12,6 +12,8 @@ import type {
   DamageItem,
   FrameInfo,
   HealthResponse,
+  SplatInfo,
+  ModelInfo,
 } from "./api-types";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
@@ -116,6 +118,28 @@ export async function uploadVideo(
 
 export function getSplatUrl(assessmentId: string, type: "exterior" | "interior"): string {
   return url(`/api/v1/assessments/${assessmentId}/splat/${type}`);
+}
+
+export async function getSplat(
+  assessmentId: string,
+  type: "exterior" | "interior",
+): Promise<SplatInfo> {
+  const res = await fetch(url(`/api/v1/assessments/${assessmentId}/splat/${type}`));
+  return handleResponse<SplatInfo>(res);
+}
+
+// -- Models (GLB for AR / 3D viewers) ----------------------------------------
+
+export function getModelUrl(assessmentId: string, type: "exterior" | "interior"): string {
+  return url(`/api/v1/assessments/${assessmentId}/model/${type}`);
+}
+
+export async function getModel(
+  assessmentId: string,
+  type: "exterior" | "interior",
+): Promise<ModelInfo> {
+  const res = await fetch(url(`/api/v1/assessments/${assessmentId}/model/${type}`));
+  return handleResponse<ModelInfo>(res);
 }
 
 // -- Damage report -----------------------------------------------------------
