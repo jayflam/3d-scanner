@@ -1,3 +1,16 @@
+## InsuraScan backend (current)
+
+The **authoritative, up‑to‑date description** of the InsuraScan v1 pipeline (video uploads → COLMAP → Gaussian splats + GLB → AI damage analysis → reports) lives in `CLAUDE.md` and the code under `app/api/v1/`.
+
+- Use this file as **background context** for the original single‑image TripoSR prototype.
+- For the production flow used by the React dashboard and web AR:
+  - See `CLAUDE.md` (architecture + testing),
+  - And `app/api/v1/*.py` for the actual REST API.
+
+The remainder of this document describes the **legacy single‑image backend** and is kept for historical reference.
+
+---
+
 # Car Damage Quote — Backend Service
 
 FastAPI backend that accepts a photo of a damaged car, generates a 3D model via
