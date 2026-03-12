@@ -116,18 +116,18 @@ export default function AssessmentDetailPage() {
   return (
     <div className="space-y-6">
       {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold">{assessment.claim_number}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <h1 className="text-xl sm:text-2xl font-bold truncate">{assessment.claim_number}</h1>
             <StatusBadge status={assessment.status} />
             {hasExteriorModel && (
-              <span className="inline-flex items-center rounded-full bg-emerald-900/40 px-2 py-0.5 text-xs font-medium text-emerald-300 border border-emerald-700/60">
+              <span className="inline-flex items-center rounded-full bg-emerald-900/40 px-2 py-0.5 text-xs font-medium text-emerald-300 border border-emerald-700/60 whitespace-nowrap">
                 AR ready
               </span>
             )}
           </div>
-          <p className="text-slate-400 text-sm">
+          <p className="text-slate-400 text-sm truncate">
             {assessment.vehicle.year} {assessment.vehicle.make}{" "}
             {assessment.vehicle.model}
             {assessment.vin && (
@@ -135,8 +135,8 @@ export default function AssessmentDetailPage() {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right text-sm text-slate-400">
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="text-right text-sm text-slate-400 hidden sm:block">
             <p>Created {new Date(assessment.created_at).toLocaleString()}</p>
             {assessment.agent_id && <p className="text-slate-500">Agent: {assessment.agent_id}</p>}
           </div>
@@ -161,7 +161,7 @@ export default function AssessmentDetailPage() {
             <ul className="text-xs text-slate-500 list-disc list-inside mb-4 space-y-0.5">
               <li>Uploaded videos</li>
               <li>Extracted frames</li>
-              <li>3D splat files</li>
+              <li>3D splat &amp; AR model files</li>
               <li>Damage items &amp; report</li>
             </ul>
             {deleteError && <p className="text-sm text-red-400 mb-3">{deleteError}</p>}

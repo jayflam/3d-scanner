@@ -112,6 +112,79 @@ def _complete_processing_job(job_id: str, error: str | None = None) -> None:
         session.commit()
 
 
+def _export_glb(
+    ply_path: Path,
+    glb_path: Path,
+    assessment_id: str,
+    video_type: str,
+) -> str | None:
+    """Convert a Gaussian-splat PLY to a renderable GLB for AR viewers.
+
+    Gaussian-splat PLYs are point clouds (no faces). model-viewer and AR
+    engines need triangulated geometry, so we reconstruct a mesh from the
+    point positions using convex hull as a lightweight fallback, or
+    ball-pivoting / alpha shapes when Open3D is available.
+    """
+    try:
+        import trimesh  # type: ignore[import]
+    except ImportError:
+        return None
+
+    loaded = trimesh.load(ply_path, process=False)
+
+    # trimesh returns PointCloud for faceless PLY, Trimesh for meshed PLY,
+    # or Scene for multi-object files.
+    if isinstance(loaded, trimesh.PointCloud):
+        pts = loaded.vertices
+        if len(pts) < 4:
+            logger.warning(
+                "Too few points (%d) for mesh reconstruction in %s/%s",
+                len(pts), assessment_id, video_type,
+            )
+            return None
+
+        try:
+            import open3d as o3d  # type: ignore[import]
+
+            pcd = o3d.geometry.PointCloud()
+            pcd.points = o3d.utility.Vector3dVector(pts)
+            pcd.estimate_normals(
+                search_param=o3d.geometry.KDTreeSearchParamHybrid(
+                    radius=0.1, max_nn=30
+                )
+            )
+
+            radii = [0.005, 0.01, 0.02, 0.04, 0.08]
+            o3d_mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_ball_pivoting(
+                pcd, o3d.utility.DoubleVector(radii)
+            )
+
+            if len(o3d_mesh.triangles) == 0:
+                o3d_mesh, _ = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(
+                    pcd, depth=8
+                )
+
+            verts = trimesh.util.np.asarray(o3d_mesh.vertices)
+            faces = trimesh.util.np.asarray(o3d_mesh.triangles)
+            mesh = trimesh.Trimesh(vertices=verts, faces=faces, process=True)
+        except ImportError:
+            mesh = trimesh.convex.convex_hull(loaded)
+    elif isinstance(loaded, trimesh.Scene):
+        mesh = loaded.dump(concatenate=True)
+    else:
+        mesh = loaded
+
+    if not hasattr(mesh, "faces") or len(mesh.faces) == 0:
+        logger.warning(
+            "Mesh has no faces after conversion for %s/%s — skipping GLB",
+            assessment_id, video_type,
+        )
+        return None
+
+    mesh.export(glb_path, file_type="glb")
+    return blob_storage.upload_model(assessment_id, video_type, glb_path)
+
+
 @celery.task(bind=True, name="app.tasks.run_splatting.run_splatting_task")
 def run_splatting_task(
     self,
@@ -223,18 +296,10 @@ def run_splatting_task(
                     97,
                     "Generating web AR model (GLB)...",
                 )
-                try:
-                    import trimesh  # type: ignore[import]
-                except ImportError:
-                    trimesh = None  # type: ignore[assignment]
-
-                if trimesh is not None:
-                    glb_path = tmpdir / f"{video_type}.glb"
-                    mesh = trimesh.load(exported, process=False)  # type: ignore[call-arg]
-                    mesh.export(glb_path)  # type: ignore[call-arg]
-                    model_blob_path = blob_storage.upload_model(
-                        assessment_id, video_type, glb_path
-                    )
+                model_blob_path = _export_glb(
+                    exported, tmpdir / f"{video_type}.glb",
+                    assessment_id, video_type,
+                )
             except Exception:
                 logger.debug(
                     "Failed to generate GLB model for %s/%s (non-fatal)",
